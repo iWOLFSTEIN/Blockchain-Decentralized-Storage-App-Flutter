@@ -1,0 +1,15 @@
+syntax = 'proto3';
+
+message Token{
+    string token = 1;
+}
+
+service TokenService{
+
+rpc getToken(TokenRequest) returns (Token) {}
+}
+
+message TokenRequest{
+    string nodeNumber = 1;
+}
+

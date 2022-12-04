@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "776092207100",
+    "project_id": "blockchain-storage-app",
+    "storage_bucket": "blockchain-storage-app.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:776092207100:android:4695afcdbebf4ccd915479",
+        "android_client_info": {
+          "package_name": "com.example.blockchain_decentralized_storage_system"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "776092207100-ekke68of06thqkot2aj92ua1cdf5168u.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCFlc6_hg-_se9VZ6pwnMMpuhBEdbGEiTU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "776092207100-ekke68of06thqkot2aj92ua1cdf5168u.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
