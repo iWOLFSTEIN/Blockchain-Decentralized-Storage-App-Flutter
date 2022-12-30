@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:blockchain_decentralized_storage_system/provider/database_provider.dart';
-import 'package:blockchain_decentralized_storage_system/services/database_helper.dart';
+import 'package:blockchain_decentralized_storage_system/screens/intro.dart';
 import 'package:blockchain_decentralized_storage_system/utils/constants.dart';
 import 'package:blockchain_decentralized_storage_system/widgets/app_branding.dart';
 import 'package:flutter/material.dart';
@@ -45,6 +45,7 @@ class _ProfileState extends State<Profile> {
     var credentials = await ethClient
         .credentialsFromPrivateKey(databaseProvider.items[0]['privateKey']);
     EtherAmount balance = await ethClient.getBalance(credentials.address);
+    print(credentials.address);
     setState(() {
       accountBalance = balance.getValueInUnit(EtherUnit.ether);
     });
@@ -105,17 +106,7 @@ class _ProfileState extends State<Profile> {
               title: 'Save Private Key',
               trailing: Icon(Icons.arrow_forward),
               action: () async {
-                try {
-                  var newPath = await getAppDirectory() +
-                      "/${databaseProvider.items[0]['name']}.db";
-                  Directory documentsDirectory =
-                      await getApplicationDocumentsDirectory();
-                  String path = join(documentsDirectory.path, "database.db");
-                  File databaseFile = File(path);
-                  await databaseFile.copy(newPath);
-                } catch (e) {
-                  print(e.toString());
-                }
+                await saveDatabase(databaseProvider);
               },
             ),
             SizedBox(
@@ -134,12 +125,35 @@ class _ProfileState extends State<Profile> {
               icon: Icons.person_outline,
               title: 'Logout',
               trailing: Icon(Icons.logout),
-              action: () {},
+              action: () {
+                try {
+                  Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(builder: (context) => Intro()),
+                      (route) => false);
+                  databaseProvider.deleteDatabase();
+                } catch (e) {
+                  print(e.toString());
+                }
+              },
             ),
           ],
         ),
       )),
     );
+  }
+
+  saveDatabase(databaseProvider) async {
+    try {
+      var newPath =
+          await getAppDirectory() + "/${databaseProvider.items[0]['name']}.db";
+      Directory documentsDirectory = await getApplicationDocumentsDirectory();
+      String path = join(documentsDirectory.path, "database.db");
+      File databaseFile = File(path);
+      await databaseFile.copy(newPath);
+    } catch (e) {
+      print(e.toString());
+    }
   }
 
   Container infoTile(

@@ -21,4 +21,8 @@ class DatabaseProvider with ChangeNotifier {
     await database.insertChildren(row);
     fetchAndSetData();
   }
+
+  deleteDatabase() async {
+    await database.truncateTable();
+  }
 }

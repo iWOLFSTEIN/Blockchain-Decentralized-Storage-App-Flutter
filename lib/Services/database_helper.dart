@@ -71,4 +71,9 @@ class DatabaseHelper with ChangeNotifier {
     Database db = await instance.database;
     return await db.query(table);
   }
+
+  Future<void> truncateTable() async {
+    Database db = await instance.database;
+    await db.execute('DELETE FROM $table;');
+  }
 }
