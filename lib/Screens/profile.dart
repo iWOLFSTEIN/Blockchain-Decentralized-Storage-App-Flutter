@@ -1,11 +1,17 @@
+import 'dart:io';
+
 import 'package:blockchain_decentralized_storage_system/provider/database_provider.dart';
+import 'package:blockchain_decentralized_storage_system/services/database_helper.dart';
 import 'package:blockchain_decentralized_storage_system/utils/constants.dart';
 import 'package:blockchain_decentralized_storage_system/widgets/app_branding.dart';
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:web3dart/web3dart.dart';
 import 'package:http/http.dart';
 import 'package:web_socket_channel/io.dart';
+import 'package:path/path.dart';
+import '../utils/app_directory.dart';
 
 class Profile extends StatefulWidget {
   const Profile({super.key});
@@ -31,7 +37,7 @@ class _ProfileState extends State<Profile> {
 
   getAccountBalance() async {
     var databaseProvider =
-        Provider.of<DatabaseProvider>(context, listen: false);
+        Provider.of<DatabaseProvider>(this.context, listen: false);
 
     print(databaseProvider.items);
     print(databaseProvider.items[0]['privateKey']);
@@ -46,6 +52,7 @@ class _ProfileState extends State<Profile> {
 
   @override
   Widget build(BuildContext context) {
+    var databaseProvider = Provider.of<DatabaseProvider>(context);
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -60,7 +67,7 @@ class _ProfileState extends State<Profile> {
             SizedBox(
               height: 30,
             ),
-            userInformation(context),
+            userInformation(context, databaseProvider),
             SizedBox(
               height: 40,
             ),
@@ -97,7 +104,19 @@ class _ProfileState extends State<Profile> {
               icon: Icons.save_alt,
               title: 'Save Private Key',
               trailing: Icon(Icons.arrow_forward),
-              action: () {},
+              action: () async {
+                try {
+                  var newPath = await getAppDirectory() +
+                      "/${databaseProvider.items[0]['name']}.db";
+                  Directory documentsDirectory =
+                      await getApplicationDocumentsDirectory();
+                  String path = join(documentsDirectory.path, "database.db");
+                  File databaseFile = File(path);
+                  await databaseFile.copy(newPath);
+                } catch (e) {
+                  print(e.toString());
+                }
+              },
             ),
             SizedBox(
               height: 10,
@@ -161,8 +180,7 @@ class _ProfileState extends State<Profile> {
     );
   }
 
-  Row userInformation(context) {
-    var databaseProvider = Provider.of<DatabaseProvider>(context);
+  Row userInformation(context, databaseProvider) {
     var name = databaseProvider.items[0]['name'];
     var time = databaseProvider.items[0]['time'].split('.')[0].split(' ')[0];
 

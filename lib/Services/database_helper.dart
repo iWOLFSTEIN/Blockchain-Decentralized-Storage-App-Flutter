@@ -7,7 +7,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:path/path.dart';
 
 class DatabaseHelper with ChangeNotifier {
-  static final _databaseName = "MyDatabase.db";
+  static final _databaseName = "database.db";
   static final _databaseVersion = 1;
 
   static final table = 'user';
