@@ -1,8 +1,48 @@
+import 'package:blockchain_decentralized_storage_system/provider/database_provider.dart';
+import 'package:blockchain_decentralized_storage_system/utils/constants.dart';
 import 'package:blockchain_decentralized_storage_system/widgets/app_branding.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:web3dart/web3dart.dart';
+import 'package:http/http.dart';
+import 'package:web_socket_channel/io.dart';
 
-class Profile extends StatelessWidget {
+class Profile extends StatefulWidget {
   const Profile({super.key});
+
+  @override
+  State<Profile> createState() => _ProfileState();
+}
+
+class _ProfileState extends State<Profile> {
+  double accountBalance = 0;
+  late Client httpClient = Client();
+  late Web3Client ethClient =
+      Web3Client(HTTP_URL, httpClient, socketConnector: () {
+    return IOWebSocketChannel.connect(WS_URL).cast<String>();
+  });
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+
+    getAccountBalance();
+  }
+
+  getAccountBalance() async {
+    var databaseProvider =
+        Provider.of<DatabaseProvider>(context, listen: false);
+
+    print(databaseProvider.items);
+    print(databaseProvider.items[0]['privateKey']);
+    print(databaseProvider.items[0]['privateKey'].length);
+    var credentials = await ethClient
+        .credentialsFromPrivateKey(databaseProvider.items[0]['privateKey']);
+    EtherAmount balance = await ethClient.getBalance(credentials.address);
+    setState(() {
+      accountBalance = balance.getValueInUnit(EtherUnit.ether);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -20,16 +60,24 @@ class Profile extends StatelessWidget {
             SizedBox(
               height: 30,
             ),
-            userInformation(),
+            userInformation(context),
             SizedBox(
               height: 40,
             ),
             infoTile(
               icon: Icons.balance,
               title: 'Account Balance',
-              trailing: Text(
-                '0.0000',
-                style: TextStyle(fontSize: 17),
+              trailing: Row(
+                children: [
+                  Text(
+                    '$accountBalance ',
+                    style: TextStyle(fontSize: 17),
+                  ),
+                  ImageIcon(
+                    AssetImage('images/ether.png'),
+                    size: 20,
+                  )
+                ],
               ),
               action: () {},
             ),
@@ -113,7 +161,11 @@ class Profile extends StatelessWidget {
     );
   }
 
-  Row userInformation() {
+  Row userInformation(context) {
+    var databaseProvider = Provider.of<DatabaseProvider>(context);
+    var name = databaseProvider.items[0]['name'];
+    var time = databaseProvider.items[0]['time'].split('.')[0].split(' ')[0];
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -125,22 +177,25 @@ class Profile extends StatelessWidget {
         SizedBox(
           width: 10,
         ),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Adam Warlock',
-              style: TextStyle(fontSize: 20.5),
-            ),
-            SizedBox(
-              height: 3,
-            ),
-            Text(
-              'created at 12/12/2022',
-              style: TextStyle(
-                  fontSize: 15.5, color: Color(0xFF6A6A6A).withOpacity(0.6)),
-            ),
-          ],
+        Padding(
+          padding: const EdgeInsets.only(top: 2),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                name,
+                style: TextStyle(fontSize: 20.5),
+              ),
+              SizedBox(
+                height: 3,
+              ),
+              Text(
+                "created on $time",
+                style: TextStyle(
+                    fontSize: 15.5, color: Color(0xFF6A6A6A).withOpacity(0.6)),
+              ),
+            ],
+          ),
         ),
         Expanded(child: SizedBox()),
         Icon(

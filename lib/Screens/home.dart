@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'package:blockchain_decentralized_storage_system/Screens/profile.dart';
+import 'package:blockchain_decentralized_storage_system/screens/profile.dart';
 import 'package:blockchain_decentralized_storage_system/Services/upload_file.dart';
 import 'package:blockchain_decentralized_storage_system/Utils/dimensions.dart';
 import 'package:file_picker/file_picker.dart';

@@ -1,87 +1,186 @@
-import 'package:blockchain_decentralized_storage_system/Screens/home.dart';
-import 'package:flutter/material.dart';
+import 'dart:math';
 
-class Intro extends StatelessWidget {
+import 'package:blockchain_decentralized_storage_system/provider/database_provider.dart';
+import 'package:blockchain_decentralized_storage_system/screens/home.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:web3dart/crypto.dart';
+import 'package:web3dart/web3dart.dart';
+
+class Intro extends StatefulWidget {
   const Intro({super.key});
 
+  @override
+  State<Intro> createState() => _IntroState();
+}
+
+class _IntroState extends State<Intro> {
+  final privateKeyController = TextEditingController();
+  final nameController = TextEditingController();
+  final pageController = PageController(initialPage: 0);
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
           child: Column(
         children: [
-          Expanded(
-              child: Container(
-            color: Color(0xFF4859A0),
-            width: double.infinity,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                ImageIcon(
-                  AssetImage('images/cube.png'),
-                  color: Colors.white,
-                  size: 80,
-                ),
-                SizedBox(
-                  height: 15,
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'HYPER',
-                      style: TextStyle(color: Colors.black, fontSize: 22.5),
-                    ),
-                    Text(
-                      'SPACE',
-                      style: TextStyle(color: Colors.white, fontSize: 22.5),
-                    )
-                  ],
-                ),
-              ],
-            ),
-          )),
+          logoArea(),
           Container(
             height: 200,
             width: double.infinity,
             color: Colors.white,
-            padding: EdgeInsets.all(20),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                TextField(
-                  decoration: InputDecoration(
-                      prefixIcon: Icon(Icons.key),
-                      hintText: 'Enter private key',
-                      suffix: Text(
-                        'Generate',
-                        style: TextStyle(color: Colors.blue),
-                      )),
-                ),
-                Container(
-                  height: 50,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                      color: Color(0xFF4859A0),
-                      borderRadius: BorderRadius.all(Radius.circular(15))),
-                  child: TextButton(
-                    onPressed: () {
-                      Navigator.pushAndRemoveUntil(
-                          context,
-                          MaterialPageRoute(builder: (context) => Home()),
-                          (route) => false);
-                    },
-                    child: Text(
-                      'Continue',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-                )
-              ],
-            ),
+            child: PageView(
+                controller: pageController,
+                physics: NeverScrollableScrollPhysics(),
+                children: [
+                  privateKeyPage(context),
+                  namePage(context),
+                ]),
           )
         ],
       )),
+    );
+  }
+
+  Widget privateKeyPage(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          textFieldPrivateKey(),
+          button(context, action: () {
+            if (privateKeyController.text != '') {
+              pageController.animateToPage(1,
+                  duration: Duration(milliseconds: 500),
+                  curve: Curves.fastOutSlowIn);
+            }
+          })
+        ],
+      ),
+    );
+  }
+
+  Widget namePage(BuildContext context) {
+    var databaseProvider = Provider.of<DatabaseProvider>(context);
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          textFieldName(),
+          button(context, action: () {
+            if (nameController.text != '') {
+              Map<String, dynamic> row = {
+                'name': nameController.text,
+                'privateKey': privateKeyController.text,
+                'time': DateTime.now().toString()
+              };
+              databaseProvider.addUserTableRow(row);
+              Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => Home()),
+                  (route) => false);
+            } else {}
+          })
+        ],
+      ),
+    );
+  }
+
+  Expanded logoArea() {
+    return Expanded(
+        child: Container(
+      color: Color(0xFF4859A0),
+      width: double.infinity,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          ImageIcon(
+            AssetImage('images/cube.png'),
+            color: Colors.white,
+            size: 80,
+          ),
+          SizedBox(
+            height: 15,
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                'HYPER',
+                style: TextStyle(color: Colors.black, fontSize: 22.5),
+              ),
+              Text(
+                'SPACE',
+                style: TextStyle(color: Colors.white, fontSize: 22.5),
+              )
+            ],
+          ),
+        ],
+      ),
+    ));
+  }
+
+  Container button(BuildContext context, {action}) {
+    return Container(
+      height: 50,
+      width: double.infinity,
+      decoration: BoxDecoration(
+          color: Color(0xFF4859A0),
+          borderRadius: BorderRadius.all(Radius.circular(15))),
+      child: TextButton(
+        onPressed: action,
+        child: Text(
+          'Continue',
+          style: TextStyle(color: Colors.white),
+        ),
+      ),
+    );
+  }
+
+  TextField textFieldPrivateKey() {
+    return TextField(
+      controller: privateKeyController,
+      obscureText: true,
+      decoration: InputDecoration(
+        prefixIcon: Icon(Icons.key),
+        hintText: 'Enter private key',
+        suffixIcon: GestureDetector(
+          onTap: () {
+            var rng = Random.secure();
+            EthPrivateKey randomKey;
+            String privateKey;
+            while (true) {
+              randomKey = EthPrivateKey.createRandom(rng);
+              privateKey = bytesToHex(randomKey.privateKey);
+              if (privateKey.length == 64) {
+                break;
+              }
+            }
+            print(privateKey);
+            print(privateKey.length);
+            setState(() {
+              privateKeyController.text = privateKey;
+            });
+          },
+          child: Text(
+            'Generate',
+            style: TextStyle(color: Colors.blue),
+          ),
+        ),
+        suffixIconConstraints: BoxConstraints(minWidth: 0, minHeight: 0),
+      ),
+    );
+  }
+
+  TextField textFieldName() {
+    return TextField(
+      controller: nameController,
+      decoration: InputDecoration(
+        prefixIcon: Icon(Icons.person),
+        hintText: 'Enter your name',
+      ),
     );
   }
 }

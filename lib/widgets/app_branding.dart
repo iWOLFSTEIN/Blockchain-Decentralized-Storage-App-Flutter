@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../Screens/profile.dart';
+import '../screens/profile.dart';
 
 class AppBranding extends StatelessWidget {
   const AppBranding({

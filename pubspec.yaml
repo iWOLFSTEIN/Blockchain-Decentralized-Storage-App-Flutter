@@ -36,13 +36,18 @@ dependencies:
   cupertino_icons: ^1.0.2
   # disk_space: ^0.2.1
   path_provider: ^2.0.11
-  firebase_core: ^1.17.1
-  cloud_firestore: ^3.1.17
+  # firebase_core: ^1.17.1
+  # cloud_firestore: ^3.1.17
   protobuf: ^2.0.1
   grpc: ^3.0.2
   get_ip_address: ^0.0.5
   file_picker: ^4.6.1
-  dio: ^4.0.6
+  # dio: ^4.0.6
+  web3dart:
+  web_socket_channel:
+  shared_preferences: ^2.0.15
+  provider: ^6.0.5
+  sqflite: ^2.2.2
 
 dev_dependencies:
   flutter_test:
