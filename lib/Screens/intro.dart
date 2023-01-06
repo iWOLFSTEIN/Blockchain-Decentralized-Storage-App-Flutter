@@ -3,6 +3,8 @@ import 'dart:io';
 import 'dart:math';
 import 'package:blockchain_decentralized_storage_system/provider/database_provider.dart';
 import 'package:blockchain_decentralized_storage_system/screens/home.dart';
+import 'package:blockchain_decentralized_storage_system/services/login_state.dart';
+import 'package:blockchain_decentralized_storage_system/widgets/custom_alert_dialogues.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
@@ -89,18 +91,27 @@ class _IntroState extends State<Intro> {
     try {
       var newPath = await getAppDirectory();
       List files = io.Directory(newPath).listSync();
-      if (!listEquals(files, [])) {
-        print(files);
-        Directory documentsDirectory = await getApplicationDocumentsDirectory();
-        String path = join(documentsDirectory.path, "database.db");
-        files[0].copy(path).then((value) {
-          databaseProvider.fetchAndSetData();
-          Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(builder: (context) => Home()),
-              (route) => false);
-        });
-      }
+      // if (!listEquals(files, [])) {
+      print(files);
+      // Directory documentsDirectory = await getApplicationDocumentsDirectory();
+      // String path = join(documentsDirectory.path, "database.db");
+      // files[0].copy(path).then((value) {
+      //   databaseProvider.fetchAndSetData();
+      //   Navigator.pushAndRemoveUntil(
+      //       context,
+      //       MaterialPageRoute(builder: (context) => Home()),
+      //       (route) => false);
+      // });
+
+      var listAlert = CustomListAlertDialogue(
+        title: 'Hyperspace Accounts',
+        subtitle: 'Select an account below to continue',
+        // action: () {},
+        // actionTitle: 'None',
+        files: files,
+      );
+      showDialog(context: context, builder: (context) => listAlert);
+      // }
     } catch (e) {
       print(e.toString());
     }
@@ -135,7 +146,7 @@ class _IntroState extends State<Intro> {
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           textFieldName(),
-          button(context, action: () {
+          button(context, action: () async {
             if (nameController.text != '') {
               Map<String, dynamic> row = {
                 'name': nameController.text,
@@ -143,6 +154,7 @@ class _IntroState extends State<Intro> {
                 'time': DateTime.now().toString()
               };
               databaseProvider.addUserTableRow(row);
+              await LoginState.setLoginState(value: true);
               Navigator.pushAndRemoveUntil(
                   context,
                   MaterialPageRoute(builder: (context) => Home()),

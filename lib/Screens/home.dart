@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
-import 'package:blockchain_decentralized_storage_system/Utils/dimensions.dart';
 import 'package:crypto/crypto.dart';
 import 'package:dart_merkle_lib/dart_merkle_lib.dart';
 import 'package:file_picker/file_picker.dart';
@@ -9,6 +8,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hex/hex.dart';
 import 'package:sha3/sha3.dart';
+import 'package:sqflite/utils/utils.dart';
+import '../utils/compute_merkle_tree.dart';
 import '../widgets/app_branding.dart';
 
 class Home extends StatefulWidget {
@@ -158,91 +159,17 @@ class _HomeState extends State<Home> {
   }
 
   pickFile() async {
-    // FilePickerResult? result = await FilePicker.platform.pickFiles();
+    FilePickerResult? result = await FilePicker.platform.pickFiles();
 
-    // if (result != null) {
-    //   String fileP = result.files.single.path as String;
-    //   File file = File(fileP);
+    if (result != null) {
+      String filePath = result.files.single.path as String;
+      File file = File(filePath);
 
-    //   PlatformFile fileM = result.files.first;
+      PlatformFile fileMetaData = result.files.first;
+      List<Uint8List> merkleTree = await fileMerkleTree(file);
+      String merkleRoot = HEX.encode(merkleTree[merkleTree.length - 1]);
 
-    //   var chunks = await fileMerkleTree(file);
-    // } else {}
-
-    List<Uint8List> merkleTree = await fileMerkleTree();
-    print("merkle root is ${HEX.encode(merkleTree[merkleTree.length - 1])}");
-  }
-
-  // fileMerkleTree(file) async {
-  //   List<Uint8List> encryptedChunks = await chunksSha3Encoding(file);
-  //   List<Uint8List> tree = merkle(encryptedChunks, chunkSha3Encoding);
-  //   print(tree[0].length);
-  //   print('[\n\t"${tree.map((x) => HEX.encode(x)).join('",\n\t"')}"\n]');
-  // }
-
-  // Uint8List chunkSha3Encoding(Uint8List chunk) {
-  //   var k = SHA3(256, KECCAK_PADDING, 256);
-  //   k.update(chunk);
-  //   var hash = k.digest();
-  //   return Uint8List.fromList(hash);
-  // }
-
-  // Future<List<Uint8List>> chunksSha3Encoding(file) async {
-  //   List<Uint8List> chunks = await fileBytesChunking(file);
-
-  //   chunks = chunks.map((chunk) {
-  //     return chunkSha3Encoding(chunk);
-  //   }).toList();
-
-  //   return chunks;
-  // }
-
-  // Future<List<Uint8List>> fileBytesChunking(file) async {
-  //   Uint8List fileBytes = await file.readAsBytes();
-  //   List<Uint8List> chunks = [];
-  //   int chunkSize = 1024;
-  //   for (var i = 0; i < fileBytes.length; i += chunkSize) {
-  //     chunks.add(fileBytes.sublist(i,
-  //         i + chunkSize > fileBytes.length ? fileBytes.length : i + chunkSize));
-  //   }
-  //   return chunks;
-  // }
-
-  Future<List<Uint8List>> fileMerkleTree() async {
-    List<Uint8List> encryptedChunks = await chunksSha3Encoding();
-    List<Uint8List> tree = merkle(encryptedChunks, chunkSha3Encoding);
-    return tree;
-  }
-
-  Uint8List chunkSha3Encoding(Uint8List chunk) {
-    var k = SHA3(256, KECCAK_PADDING, 256);
-    k.update(chunk);
-    var hash = k.digest();
-    return Uint8List.fromList(hash);
-  }
-
-  Future<List<Uint8List>> chunksSha3Encoding() async {
-    List<Uint8List> chunks = await fileBytesChunking();
-
-    chunks = chunks.map((chunk) {
-      return chunkSha3Encoding(chunk);
-    }).toList();
-
-    return chunks;
-  }
-
-  Future<List<Uint8List>> fileBytesChunking() async {
-    Uint8List stringBytes = Uint8List.fromList(utf8.encode(
-        'This is a dummy text. I am just using it for the testing puposes.'));
-    List<Uint8List> chunks = [];
-    int chunkSize = 8;
-    for (var i = 0; i < stringBytes.length; i += chunkSize) {
-      chunks.add(stringBytes.sublist(
-          i,
-          i + chunkSize > stringBytes.length
-              ? stringBytes.length
-              : i + chunkSize));
-    }
-    return chunks;
+      print("merkle root of file is $merkleRoot");
+    } else {}
   }
 }

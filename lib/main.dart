@@ -2,6 +2,7 @@ import 'package:blockchain_decentralized_storage_system/provider/database_provid
 import 'package:blockchain_decentralized_storage_system/screens/home.dart';
 import 'package:blockchain_decentralized_storage_system/screens/intro.dart';
 import 'package:blockchain_decentralized_storage_system/services/database_helper.dart';
+import 'package:blockchain_decentralized_storage_system/services/login_state.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:grpc/grpc.dart';
@@ -44,18 +45,37 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class StartApp extends StatelessWidget {
+class StartApp extends StatefulWidget {
   const StartApp({super.key});
 
   @override
+  State<StartApp> createState() => _StartAppState();
+}
+
+class _StartAppState extends State<StartApp> {
+  bool isLoggedIn = false;
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    getUserLoginState();
+  }
+
+  getUserLoginState() async {
+    bool loginState = await LoginState.getLoginState();
+    setState(() {
+      isLoggedIn = loginState;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    var databaseProvider = Provider.of<DatabaseProvider>(context);
     return MaterialApp(
       title: 'Hyperspace',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: listEquals(databaseProvider.items, []) ? Intro() : Home(),
+      home: isLoggedIn ? Home() : Intro(),
     );
   }
 }

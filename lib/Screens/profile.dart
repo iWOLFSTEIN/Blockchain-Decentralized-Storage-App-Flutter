@@ -1,7 +1,9 @@
 import 'dart:io';
 
+import 'package:alert/alert.dart';
 import 'package:blockchain_decentralized_storage_system/provider/database_provider.dart';
 import 'package:blockchain_decentralized_storage_system/screens/intro.dart';
+import 'package:blockchain_decentralized_storage_system/services/login_state.dart';
 import 'package:blockchain_decentralized_storage_system/utils/constants.dart';
 import 'package:blockchain_decentralized_storage_system/widgets/app_branding.dart';
 import 'package:flutter/material.dart';
@@ -12,6 +14,7 @@ import 'package:http/http.dart';
 import 'package:web_socket_channel/io.dart';
 import 'package:path/path.dart';
 import '../utils/app_directory.dart';
+import '../widgets/custom_alert_dialogues.dart';
 
 class Profile extends StatefulWidget {
   const Profile({super.key});
@@ -93,9 +96,9 @@ class _ProfileState extends State<Profile> {
               height: 10,
             ),
             infoTile(
-              icon: Icons.repeat_sharp,
-              title: 'Change Account',
-              trailing: Icon(Icons.arrow_forward),
+              icon: Icons.key,
+              title: 'Show Private Key',
+              trailing: Icon(Icons.remove_red_eye_outlined),
               action: () {},
             ),
             SizedBox(
@@ -103,10 +106,18 @@ class _ProfileState extends State<Profile> {
             ),
             infoTile(
               icon: Icons.save_alt,
-              title: 'Save Private Key',
+              title: 'Save Account',
               trailing: Icon(Icons.arrow_forward),
-              action: () async {
-                await saveDatabase(databaseProvider);
+              action: () {
+                saveAccountAlert(context, databaseProvider,
+                    primaryAction: () async {
+                  await saveDatabase(databaseProvider).then((value) {
+                    Alert(message: 'Account saved').show();
+                  });
+                  Navigator.pop(context);
+                }, secondaryAction: () {
+                  Navigator.pop(context);
+                });
               },
             ),
             SizedBox(
@@ -115,7 +126,7 @@ class _ProfileState extends State<Profile> {
             infoTile(
               icon: Icons.privacy_tip_outlined,
               title: 'Privacy Policy',
-              trailing: Icon(Icons.read_more),
+              trailing: Icon(Icons.arrow_forward),
               action: () {},
             ),
             SizedBox(
@@ -125,13 +136,29 @@ class _ProfileState extends State<Profile> {
               icon: Icons.person_outline,
               title: 'Logout',
               trailing: Icon(Icons.logout),
-              action: () {
+              action: () async {
                 try {
-                  Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(builder: (context) => Intro()),
-                      (route) => false);
-                  databaseProvider.deleteDatabase();
+                  await saveAccountAlert(context, databaseProvider,
+                      primaryAction: () async {
+                    await saveDatabase(databaseProvider).then((value) {
+                      Alert(message: 'Account saved').show();
+                    });
+                    await deleteDatabaseAndLogout(context, databaseProvider);
+                    //  Navigator.pushAndRemoveUntil(
+                    //     context,
+                    //     MaterialPageRoute(builder: (context) => Intro()),
+                    //     (route) => false);
+                    // await LoginState.setLoginState(value: false);
+                    // databaseProvider.deleteDatabase();
+                  }, secondaryAction: () async {
+                    await deleteDatabaseAndLogout(context, databaseProvider);
+                    // Navigator.pushAndRemoveUntil(
+                    //     context,
+                    //     MaterialPageRoute(builder: (context) => Intro()),
+                    //     (route) => false);
+                    // await LoginState.setLoginState(value: false);
+                    // databaseProvider.deleteDatabase();
+                  });
                 } catch (e) {
                   print(e.toString());
                 }
@@ -141,6 +168,26 @@ class _ProfileState extends State<Profile> {
         ),
       )),
     );
+  }
+
+  deleteDatabaseAndLogout(context, databaseProvider) async {
+    Navigator.pushAndRemoveUntil(context,
+        MaterialPageRoute(builder: (context) => Intro()), (route) => false);
+    await LoginState.setLoginState(value: false);
+    databaseProvider.deleteDatabase();
+  }
+
+  saveAccountAlert(context, databaseProvider,
+      {primaryAction, secondaryAction}) {
+    var alert = CustomModifiedAlertDialogue(
+      title: 'Save Hyperspace Account',
+      subtitle:
+          'Save your account for later use. If you dont save your account all the data will be lost.',
+      action: primaryAction,
+      actionTitle: 'Save Account',
+      secondaryAction: secondaryAction,
+    );
+    showDialog(context: context, builder: (context) => alert);
   }
 
   saveDatabase(databaseProvider) async {
@@ -156,17 +203,17 @@ class _ProfileState extends State<Profile> {
     }
   }
 
-  Container infoTile(
+  Widget infoTile(
       {required icon, required title, required trailing, required action}) {
-    return Container(
-      height: 65,
-      decoration: BoxDecoration(
-          color:
-              //Colors.orange,
-              Color(0xFFFAFAFA),
-          borderRadius: BorderRadius.all(Radius.circular(15))),
-      child: GestureDetector(
-        onTap: action,
+    return GestureDetector(
+      onTap: action,
+      child: Container(
+        height: 65,
+        decoration: BoxDecoration(
+            color:
+                //Colors.orange,
+                Color(0xFFFAFAFA),
+            borderRadius: BorderRadius.all(Radius.circular(15))),
         child: Row(
           children: [
             SizedBox(
@@ -202,10 +249,7 @@ class _ProfileState extends State<Profile> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         CircleAvatar(
-          radius: 26,
-          backgroundImage: NetworkImage(
-              'https://www.cnet.com/a/img/resize/e547a2e4388fcc5ab560f821ac170a59b9fb0143/hub/2021/12/13/d319cda7-1ddd-4855-ac55-9dcd9ce0f6eb/unnamed.png?auto=webp&fit=crop&height=1200&width=1200'),
-        ),
+            radius: 26, backgroundImage: AssetImage('images/profile_nft.png')),
         SizedBox(
           width: 10,
         ),
