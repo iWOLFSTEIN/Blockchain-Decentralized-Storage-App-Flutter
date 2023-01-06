@@ -1,7 +1,6 @@
 import 'dart:io' as io;
 import 'dart:io';
 import 'dart:math';
-
 import 'package:blockchain_decentralized_storage_system/provider/database_provider.dart';
 import 'package:blockchain_decentralized_storage_system/screens/home.dart';
 import 'package:flutter/foundation.dart';
@@ -11,7 +10,6 @@ import 'package:provider/provider.dart';
 import 'package:web3dart/crypto.dart';
 import 'package:web3dart/web3dart.dart';
 import 'package:path/path.dart';
-
 import '../utils/app_directory.dart';
 
 class Intro extends StatefulWidget {
@@ -70,7 +68,6 @@ class _IntroState extends State<Intro> {
                 ),
                 Container(
                   height: 200,
-                  // color: Colors.orange,
                   width: double.infinity,
                   child: PageView(
                       controller: pageController,
