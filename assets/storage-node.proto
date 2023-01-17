@@ -1,0 +1,55 @@
+syntax = "proto3";
+// import "google/protobuf/empty.proto";
+
+package proto;
+option go_package = "./";
+
+
+message GetStatsResponse {
+    int32 freeStorage = 1; // in bytes
+}
+
+message InitTransactionRequest {
+    uint64 fileSize = 1;
+    uint64 segmentsCount = 2;
+    string fileHash = 3; // hex-encoded hash
+    string bid = 4;
+    string userAddress = 5;
+    uint64 timeStart = 6;
+    uint64 timeEnd = 7;
+    uint64 concludeTimeout = 8;
+    uint64 ProveTimeout = 9;
+}
+
+message InitTransactionResponse {
+    string JWT = 1;
+    int64 expiresAt = 2;
+    string httpURL = 3;
+}
+
+message Empty {
+
+}
+
+message PingRequest {
+    uint64 fileSize = 1;
+    uint32 segmentsCount = 2;
+    string bidPrice = 3; // in wei
+    uint64 timePeriod = 4; // how long
+}
+message PingResponse {
+    bool canStore = 1;
+    string bidPrice = 2; // in wei
+}
+
+service StorageNode {
+    rpc GetStats(Empty) returns (GetStatsResponse) {}
+    rpc InitTransaction(InitTransactionRequest) returns (InitTransactionResponse) {}
+
+    /**
+        @notice Can be used to ping this node, with arguments. Latency can be checked using this method.
+    */
+    rpc Ping(PingRequest) returns (PingResponse){}
+
+
+}

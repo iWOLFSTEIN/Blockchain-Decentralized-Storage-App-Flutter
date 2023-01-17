@@ -13,6 +13,7 @@ import 'package:web3dart/web3dart.dart';
 import 'package:http/http.dart';
 import 'package:web_socket_channel/io.dart';
 import 'package:path/path.dart';
+import '../provider/data_provider.dart';
 import '../utils/app_directory.dart';
 import '../widgets/custom_alert_dialogues.dart';
 
@@ -24,39 +25,10 @@ class Profile extends StatefulWidget {
 }
 
 class _ProfileState extends State<Profile> {
-  double accountBalance = 0;
-  late Client httpClient = Client();
-  late Web3Client ethClient =
-      Web3Client(HTTP_URL, httpClient, socketConnector: () {
-    return IOWebSocketChannel.connect(WS_URL).cast<String>();
-  });
-  @override
-  void initState() {
-    // TODO: implement initState
-    super.initState();
-
-    getAccountBalance();
-  }
-
-  getAccountBalance() async {
-    var databaseProvider =
-        Provider.of<DatabaseProvider>(this.context, listen: false);
-
-    print(databaseProvider.items);
-    print(databaseProvider.items[0]['privateKey']);
-    print(databaseProvider.items[0]['privateKey'].length);
-    var credentials = await ethClient
-        .credentialsFromPrivateKey(databaseProvider.items[0]['privateKey']);
-    EtherAmount balance = await ethClient.getBalance(credentials.address);
-    print(credentials.address);
-    setState(() {
-      accountBalance = balance.getValueInUnit(EtherUnit.ether);
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     var databaseProvider = Provider.of<DatabaseProvider>(context);
+    var dataProvider = Provider.of<DataProvider>(this.context);
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -81,7 +53,7 @@ class _ProfileState extends State<Profile> {
               trailing: Row(
                 children: [
                   Text(
-                    '$accountBalance ',
+                    '${dataProvider.balance} ',
                     style: TextStyle(fontSize: 17),
                   ),
                   ImageIcon(
@@ -144,20 +116,8 @@ class _ProfileState extends State<Profile> {
                       Alert(message: 'Account saved').show();
                     });
                     await deleteDatabaseAndLogout(context, databaseProvider);
-                    //  Navigator.pushAndRemoveUntil(
-                    //     context,
-                    //     MaterialPageRoute(builder: (context) => Intro()),
-                    //     (route) => false);
-                    // await LoginState.setLoginState(value: false);
-                    // databaseProvider.deleteDatabase();
                   }, secondaryAction: () async {
                     await deleteDatabaseAndLogout(context, databaseProvider);
-                    // Navigator.pushAndRemoveUntil(
-                    //     context,
-                    //     MaterialPageRoute(builder: (context) => Intro()),
-                    //     (route) => false);
-                    // await LoginState.setLoginState(value: false);
-                    // databaseProvider.deleteDatabase();
                   });
                 } catch (e) {
                   print(e.toString());

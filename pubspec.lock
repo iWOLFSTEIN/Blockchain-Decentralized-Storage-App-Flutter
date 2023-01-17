@@ -114,7 +114,7 @@ packages:
     source: hosted
     version: "4.6.1"
   fixnum:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: fixnum
       url: "https://pub.dartlang.org"

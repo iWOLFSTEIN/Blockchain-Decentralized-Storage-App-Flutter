@@ -1,4 +1,6 @@
+import 'package:blockchain_decentralized_storage_system/provider/data_provider.dart';
 import 'package:blockchain_decentralized_storage_system/provider/database_provider.dart';
+import 'package:blockchain_decentralized_storage_system/provider/network_data.dart';
 import 'package:blockchain_decentralized_storage_system/screens/home.dart';
 import 'package:blockchain_decentralized_storage_system/screens/intro.dart';
 import 'package:blockchain_decentralized_storage_system/services/database_helper.dart';
@@ -7,7 +9,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:grpc/grpc.dart';
 import 'package:provider/provider.dart';
-import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -34,7 +35,15 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         // ChangeNotifierProvider(create: (context) => DataProvider()),
+
         ChangeNotifierProvider(create: (context) => DatabaseHelper()),
+        ChangeNotifierProvider(create: (context) => NetworkData()),
+
+        ChangeNotifierProxyProvider<NetworkData, DataProvider>(
+            create: (context) => DataProvider(NetworkData(), 0.0),
+            update: (context, networkData, dataProvider) =>
+                DataProvider(networkData, dataProvider!.balance)),
+
         ChangeNotifierProxyProvider<DatabaseHelper, DatabaseProvider>(
             create: (context) => DatabaseProvider([], DatabaseHelper.instance),
             update: (context, database, databaseProvider) =>

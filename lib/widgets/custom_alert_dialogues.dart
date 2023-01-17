@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:blockchain_decentralized_storage_system/services/login_state.dart';
 import 'package:path/path.dart';
 
 import 'package:flutter/foundation.dart';
@@ -170,12 +171,13 @@ class CustomListAlertDialogue extends StatelessWidget {
           Directory documentsDirectory =
               await getApplicationDocumentsDirectory();
           String path = join(documentsDirectory.path, "database.db");
-          file.copy(path).then((value) {
+          file.copy(path).then((value) async {
             databaseProvider.fetchAndSetData();
             Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(builder: (context) => Home()),
                 (route) => false);
+            await LoginState.setLoginState(value: true);
           });
         },
         leading: CircleAvatar(

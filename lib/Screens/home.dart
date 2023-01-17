@@ -1,16 +1,29 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:blockchain_decentralized_storage_system/provider/data_provider.dart';
+import 'package:blockchain_decentralized_storage_system/services/generated/storage-node.pbgrpc.dart';
+import 'package:blockchain_decentralized_storage_system/services/rpc_calls.dart';
+import 'package:blockchain_decentralized_storage_system/services/smart_contract_helper_methods.dart';
+import 'package:blockchain_decentralized_storage_system/utils/constants.dart';
 import 'package:crypto/crypto.dart';
 import 'package:dart_merkle_lib/dart_merkle_lib.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:fixnum/fixnum.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:grpc/grpc.dart';
+import 'package:grpc/grpc_connection_interface.dart';
 import 'package:hex/hex.dart';
+import 'package:provider/provider.dart';
 import 'package:sha3/sha3.dart';
-import 'package:sqflite/utils/utils.dart';
+import 'package:web3dart/web3dart.dart';
+import 'package:web_socket_channel/io.dart';
+import '../provider/database_provider.dart';
 import '../utils/compute_merkle_tree.dart';
 import '../widgets/app_branding.dart';
+import 'package:http/http.dart' as http;
 
 class Home extends StatefulWidget {
   Home({Key? key}) : super(key: key);
@@ -20,6 +33,40 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
+  late http.Client httpClient = http.Client();
+  late Web3Client ethClient =
+      Web3Client(HTTP_URL, httpClient, socketConnector: () {
+    return IOWebSocketChannel.connect(HTTP_URL).cast<String>();
+  });
+  List serversUrls = [];
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    serversAddresses();
+    fetchAccountBalance();
+  }
+
+  fetchAccountBalance() {
+    Future.delayed(Duration(milliseconds: 500), () {
+      var dataProvider = Provider.of<DataProvider>(this.context, listen: false);
+      var databaseProvider =
+          Provider.of<DatabaseProvider>(this.context, listen: false);
+      print(databaseProvider.items);
+      dataProvider.fetchAndSync(
+          ethClient: ethClient,
+          privateKey: databaseProvider.items[0]['privateKey']);
+    });
+  }
+
+  serversAddresses() async {
+    List urls = await getServersAddresses(ethClient: ethClient);
+    print(urls);
+    setState(() {
+      serversUrls = urls;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -166,10 +213,27 @@ class _HomeState extends State<Home> {
       File file = File(filePath);
 
       PlatformFile fileMetaData = result.files.first;
-      List<Uint8List> merkleTree = await fileMerkleTree(file);
-      String merkleRoot = HEX.encode(merkleTree[merkleTree.length - 1]);
+      // List<Uint8List> merkleTree = await fileMerkleTree(file);
+      // String merkleRoot = HEX.encode(merkleTree[merkleTree.length - 1]);
 
-      print("merkle root of file is $merkleRoot");
+      // print("merkle root of file is $merkleRoot");
+
+      print(fileMetaData.size);
+      print((fileMetaData.size / 1024).ceil());
+
+      if (!listEquals(serversUrls, [])) {
+        StorageNode storageNode = StorageNode(address: serversUrls[2]);
+        var responseStats = await storageNode.stats();
+        var responsePing = await storageNode.ping(
+            fileSize: Int64(fileMetaData.size),
+            segmentCount: (fileMetaData.size / 1024).ceil(),
+            bidPrice: '0',
+            timePeriod: Int64(DateTime.now().millisecond));
+        print('Free storage on server: ${responseStats.freeStorage}');
+        print(
+            'Bid amount: ${EtherAmount.inWei(BigInt.parse(responsePing.bidPrice)).getValueInUnit(EtherUnit.ether)}');
+        print(responsePing.canStore);
+      }
     } else {}
   }
 }
