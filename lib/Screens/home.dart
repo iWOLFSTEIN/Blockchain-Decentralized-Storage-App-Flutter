@@ -48,11 +48,10 @@ class _HomeState extends State<Home> {
   }
 
   fetchAccountBalance() {
-    Future.delayed(Duration(milliseconds: 500), () {
+    Future.delayed(Duration(milliseconds: 1000), () {
       var dataProvider = Provider.of<DataProvider>(this.context, listen: false);
       var databaseProvider =
           Provider.of<DatabaseProvider>(this.context, listen: false);
-      print(databaseProvider.items);
       dataProvider.fetchAndSync(
           ethClient: ethClient,
           privateKey: databaseProvider.items[0]['privateKey']);
@@ -69,6 +68,14 @@ class _HomeState extends State<Home> {
 
   @override
   Widget build(BuildContext context) {
+    // if (listEquals(serversUrls, [])) {
+    //   return Container(
+    //     color: Colors.white,
+    //     child: Center(
+    //       child: CircularProgressIndicator(),
+    //     ),
+    //   );
+    // }
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -114,7 +121,7 @@ class _HomeState extends State<Home> {
                           child: Row(
                             children: [
                               Opacity(
-                                opacity: 0.3,
+                                opacity: 0.6,
                                 child: Image.asset(
                                   'images/file.png',
                                   height: 22.5,

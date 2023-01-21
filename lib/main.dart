@@ -3,26 +3,17 @@ import 'package:blockchain_decentralized_storage_system/provider/database_provid
 import 'package:blockchain_decentralized_storage_system/provider/network_data.dart';
 import 'package:blockchain_decentralized_storage_system/screens/home.dart';
 import 'package:blockchain_decentralized_storage_system/screens/intro.dart';
-import 'package:blockchain_decentralized_storage_system/services/database_helper.dart';
+import 'package:blockchain_decentralized_storage_system/provider/database_helper.dart';
 import 'package:blockchain_decentralized_storage_system/services/login_state.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:grpc/grpc.dart';
 import 'package:provider/provider.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  // await Firebase.initializeApp(
-  //   options: DefaultFirebaseOptions.currentPlatform,
-  // );
-  // var response;
-  // try {
-  //   response = await getRPCResponse();
-  //   print(response);
-  // } catch (e) {
-  //   print("error getting response");
-  //   print(e.toString());
-  // }
+  WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
   runApp(const MyApp());
 }
 
@@ -75,6 +66,7 @@ class _StartAppState extends State<StartApp> {
     setState(() {
       isLoggedIn = loginState;
     });
+    FlutterNativeSplash.remove();
   }
 
   @override

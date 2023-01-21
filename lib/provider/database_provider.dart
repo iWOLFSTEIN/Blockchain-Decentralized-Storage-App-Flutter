@@ -1,5 +1,5 @@
 import 'package:flutter/cupertino.dart';
-import '../services/database_helper.dart';
+import 'database_helper.dart';
 
 class DatabaseProvider with ChangeNotifier {
   DatabaseProvider(this._items, this.database) {

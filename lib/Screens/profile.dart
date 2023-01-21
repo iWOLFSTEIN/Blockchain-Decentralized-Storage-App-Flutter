@@ -118,7 +118,7 @@ class _ProfileState extends State<Profile> {
                     await deleteDatabaseAndLogout(context, databaseProvider);
                   }, secondaryAction: () async {
                     await deleteDatabaseAndLogout(context, databaseProvider);
-                  });
+                  }, secondaryActionTitle: 'Not Now');
                 } catch (e) {
                   print(e.toString());
                 }
@@ -138,7 +138,7 @@ class _ProfileState extends State<Profile> {
   }
 
   saveAccountAlert(context, databaseProvider,
-      {primaryAction, secondaryAction}) {
+      {primaryAction, secondaryAction, secondaryActionTitle = 'Go Back'}) {
     var alert = CustomModifiedAlertDialogue(
       title: 'Save Hyperspace Account',
       subtitle:
@@ -146,6 +146,7 @@ class _ProfileState extends State<Profile> {
       action: primaryAction,
       actionTitle: 'Save Account',
       secondaryAction: secondaryAction,
+      secondaryActionTitle: secondaryActionTitle,
     );
     showDialog(context: context, builder: (context) => alert);
   }

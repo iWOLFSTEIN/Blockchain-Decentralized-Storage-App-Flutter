@@ -177,7 +177,7 @@ class _IntroState extends State<Intro> {
           ImageIcon(
             AssetImage('images/cube.png'),
             color: Colors.white,
-            size: 80,
+            size: 70,
           ),
           SizedBox(
             height: 15,

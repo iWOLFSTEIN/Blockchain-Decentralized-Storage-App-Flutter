@@ -30,11 +30,11 @@ class AppBranding extends StatelessWidget {
               children: [
                 Text(
                   'HYPER',
-                  style: TextStyle(color: Colors.black, fontSize: 20),
+                  style: TextStyle(color: Colors.black, fontSize: 19),
                 ),
                 Text(
                   'SPACE',
-                  style: TextStyle(color: Color(0xFF7D7D7D), fontSize: 20),
+                  style: TextStyle(color: Color(0xFF7D7D7D), fontSize: 19),
                 )
               ],
             ),

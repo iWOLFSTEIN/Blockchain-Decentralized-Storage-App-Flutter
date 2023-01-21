@@ -11,19 +11,21 @@ import '../provider/database_provider.dart';
 import '../screens/home.dart';
 
 class CustomModifiedAlertDialogue extends StatelessWidget {
-  const CustomModifiedAlertDialogue({
-    Key? key,
-    this.title,
-    this.subtitle,
-    this.action,
-    this.actionTitle,
-    this.secondaryAction,
-  }) : super(key: key);
+  const CustomModifiedAlertDialogue(
+      {Key? key,
+      this.title,
+      this.subtitle,
+      this.action,
+      this.actionTitle,
+      this.secondaryAction,
+      this.secondaryActionTitle = 'Go Back'})
+      : super(key: key);
   final String? title;
   final String? subtitle;
   final Function()? action;
   final String? actionTitle;
   final Function()? secondaryAction;
+  final String? secondaryActionTitle;
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -60,8 +62,8 @@ class CustomModifiedAlertDialogue extends StatelessWidget {
               Container(),
               GestureDetector(
                 onTap: secondaryAction,
-                child: const Text(
-                  'Go Back',
+                child: Text(
+                  secondaryActionTitle!,
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 18.5,

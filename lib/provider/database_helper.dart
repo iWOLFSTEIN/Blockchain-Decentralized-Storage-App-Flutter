@@ -69,7 +69,7 @@ class DatabaseHelper with ChangeNotifier {
   // a key-value list of columns.
   Future<List<Map<String, dynamic>>> queryAllChildrenRows() async {
     Database db = await instance.database;
-    return await db.query(table);
+    return await db.query(table, limit: 1);
   }
 
   Future<void> truncateTable() async {

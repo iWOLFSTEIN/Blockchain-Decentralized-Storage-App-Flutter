@@ -52,11 +52,27 @@ dependencies:
   dart_merkle_lib: ^1.0.1
   alert: ^2.0.1
   fixnum: ^1.0.1
+  flutter_native_splash: ^2.2.17
 
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  
+
+
+# flutter_native_splash-development.yaml
+flutter_native_splash:
+  color: "#ffffff"
+  image: images/cube.png
+  # background_image: images/splash.png
+
+  android_12:
+    # image: images/splash.png
+    image: images/cube.png
+    icon_background_color: "#ffffff"
+
+  web: false
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
