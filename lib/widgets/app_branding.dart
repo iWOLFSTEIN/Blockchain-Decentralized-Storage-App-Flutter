@@ -16,8 +16,8 @@ class AppBranding extends StatelessWidget {
       children: [
         Image.asset(
           'images/cube.png',
-          height: 35,
-          width: 35,
+          height: 40,
+          width: 40,
         ),
         SizedBox(
           width: 7.5,

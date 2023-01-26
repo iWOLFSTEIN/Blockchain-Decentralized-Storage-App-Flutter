@@ -1,3 +1,4 @@
+import 'package:blockchain_decentralized_storage_system/structures/node.dart';
 import 'package:blockchain_decentralized_storage_system/utils/constants.dart';
 import 'package:flutter/services.dart';
 import 'package:web3dart/contracts.dart';
@@ -25,9 +26,9 @@ Future<List<dynamic>> querySmartContract(
   return result;
 }
 
-Future<List> getServersAddresses({required ethClient}) async {
+Future<List<Node>> getServersAddresses({required ethClient}) async {
   try {
-    List serverAddresses = [];
+    List<Node> serverAddresses = [];
     var getAllStorageNodesAddresses = await querySmartContract(
         functionName: getStorageContracts,
         args: [],
@@ -36,14 +37,17 @@ Future<List> getServersAddresses({required ethClient}) async {
         contractAddress: FACTORY_CONTRACT_ADDRESS,
         contractAbiPath: "assets/factory-abi.json");
 
-    for (var address in getAllStorageNodesAddresses[0])
-      serverAddresses.add(await querySmartContract(
+    for (var address in getAllStorageNodesAddresses[0]) {
+      var url = await querySmartContract(
           functionName: host,
           args: [],
           ethClient: ethClient,
           contractName: storageNode,
           contractAddress: address.toString(),
-          contractAbiPath: "assets/storage-contract-abi.json"));
+          contractAbiPath: "assets/storage-contract-abi.json");
+      var node = Node(address.toString(), url[0]);
+      serverAddresses.add(node);
+    }
 
     return serverAddresses;
   } catch (e) {

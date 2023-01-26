@@ -2,9 +2,11 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:blockchain_decentralized_storage_system/provider/data_provider.dart';
+import 'package:blockchain_decentralized_storage_system/screens/upload.dart';
 import 'package:blockchain_decentralized_storage_system/services/generated/storage-node.pbgrpc.dart';
 import 'package:blockchain_decentralized_storage_system/services/rpc_calls.dart';
 import 'package:blockchain_decentralized_storage_system/services/smart_contract_helper_methods.dart';
+import 'package:blockchain_decentralized_storage_system/structures/node.dart';
 import 'package:blockchain_decentralized_storage_system/utils/constants.dart';
 import 'package:crypto/crypto.dart';
 import 'package:dart_merkle_lib/dart_merkle_lib.dart';
@@ -38,29 +40,31 @@ class _HomeState extends State<Home> {
       Web3Client(HTTP_URL, httpClient, socketConnector: () {
     return IOWebSocketChannel.connect(HTTP_URL).cast<String>();
   });
-  List serversUrls = [];
+  List<Node> serversUrls = [];
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
     serversAddresses();
-    fetchAccountBalance();
+    updateAccountDetails();
   }
 
-  fetchAccountBalance() {
-    Future.delayed(Duration(milliseconds: 1000), () {
+  updateAccountDetails() {
+    Future.delayed(Duration(milliseconds: 2000), () {
       var dataProvider = Provider.of<DataProvider>(this.context, listen: false);
       var databaseProvider =
           Provider.of<DatabaseProvider>(this.context, listen: false);
-      dataProvider.fetchAndSync(
-          ethClient: ethClient,
-          privateKey: databaseProvider.items[0]['privateKey']);
+      var privateKey = databaseProvider.items[0]['privateKey'];
+      dataProvider.fetchAndSyncBalance(
+          ethClient: ethClient, privateKey: privateKey);
+
+      dataProvider.fetchAndSyncAccountDetails(
+          ethClient: ethClient, privateKey: privateKey);
     });
   }
 
   serversAddresses() async {
-    List urls = await getServersAddresses(ethClient: ethClient);
-    print(urls);
+    List<Node> urls = await getServersAddresses(ethClient: ethClient);
     setState(() {
       serversUrls = urls;
     });
@@ -121,7 +125,7 @@ class _HomeState extends State<Home> {
                           child: Row(
                             children: [
                               Opacity(
-                                opacity: 0.6,
+                                opacity: 0.5,
                                 child: Image.asset(
                                   'images/file.png',
                                   height: 22.5,
@@ -218,28 +222,17 @@ class _HomeState extends State<Home> {
     if (result != null) {
       String filePath = result.files.single.path as String;
       File file = File(filePath);
-
       PlatformFile fileMetaData = result.files.first;
-      // List<Uint8List> merkleTree = await fileMerkleTree(file);
-      // String merkleRoot = HEX.encode(merkleTree[merkleTree.length - 1]);
-
-      // print("merkle root of file is $merkleRoot");
-
-      print(fileMetaData.size);
-      print((fileMetaData.size / 1024).ceil());
 
       if (!listEquals(serversUrls, [])) {
-        StorageNode storageNode = StorageNode(address: serversUrls[2]);
-        var responseStats = await storageNode.stats();
-        var responsePing = await storageNode.ping(
-            fileSize: Int64(fileMetaData.size),
-            segmentCount: (fileMetaData.size / 1024).ceil(),
-            bidPrice: '0',
-            timePeriod: Int64(DateTime.now().millisecond));
-        print('Free storage on server: ${responseStats.freeStorage}');
-        print(
-            'Bid amount: ${EtherAmount.inWei(BigInt.parse(responsePing.bidPrice)).getValueInUnit(EtherUnit.ether)}');
-        print(responsePing.canStore);
+        Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (context) => Upload(
+                      file: file,
+                      fileMetaData: fileMetaData,
+                      serversUrls: serversUrls,
+                    )));
       }
     } else {}
   }

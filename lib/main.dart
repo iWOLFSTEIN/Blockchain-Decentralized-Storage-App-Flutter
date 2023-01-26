@@ -4,6 +4,7 @@ import 'package:blockchain_decentralized_storage_system/provider/network_data.da
 import 'package:blockchain_decentralized_storage_system/screens/home.dart';
 import 'package:blockchain_decentralized_storage_system/screens/intro.dart';
 import 'package:blockchain_decentralized_storage_system/provider/database_helper.dart';
+import 'package:blockchain_decentralized_storage_system/screens/upload.dart';
 import 'package:blockchain_decentralized_storage_system/services/login_state.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -21,6 +22,7 @@ class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
 
   // This widget is the root of your application.
+
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
@@ -31,9 +33,12 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (context) => NetworkData()),
 
         ChangeNotifierProxyProvider<NetworkData, DataProvider>(
-            create: (context) => DataProvider(NetworkData(), 0.0),
-            update: (context, networkData, dataProvider) =>
-                DataProvider(networkData, dataProvider!.balance)),
+            create: (context) => DataProvider(NetworkData(), 0.0, '', ''),
+            update: (context, networkData, dataProvider) => DataProvider(
+                networkData,
+                dataProvider!.balance,
+                dataProvider.accountAddress,
+                dataProvider.publicKey)),
 
         ChangeNotifierProxyProvider<DatabaseHelper, DatabaseProvider>(
             create: (context) => DatabaseProvider([], DatabaseHelper.instance),
@@ -77,6 +82,7 @@ class _StartAppState extends State<StartApp> {
         primarySwatch: Colors.blue,
       ),
       home: isLoggedIn ? Home() : Intro(),
+      // home: Upload(),
     );
   }
 }

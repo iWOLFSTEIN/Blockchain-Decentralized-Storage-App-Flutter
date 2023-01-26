@@ -5,21 +5,21 @@ import 'generated/storage-node.pbgrpc.dart';
 class StorageNode {
   late StorageNodeClient _storageNode;
 
-  StorageNode({required address}) {
+  StorageNode({required String address}) {
     _storageNode = _storageNodeConnection(address: address);
   }
 
-  StorageNodeClient _storageNodeConnection({required address}) {
+  StorageNodeClient _storageNodeConnection({required String address}) {
     List serverAddressList;
     String serverAddress;
     int port;
 
-    if (address[0].contains('http://')) {
-      serverAddressList = address[0].split('//')[1].split(':');
+    if (address.contains('http://')) {
+      serverAddressList = address.split('//')[1].split(':');
       serverAddress = serverAddressList[0];
       port = int.parse(serverAddressList[1]);
     } else {
-      serverAddressList = address[0].split(':');
+      serverAddressList = address.split(':');
       serverAddress = serverAddressList[0];
       port = int.parse(serverAddressList[1]);
     }

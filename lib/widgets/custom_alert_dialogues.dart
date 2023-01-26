@@ -255,8 +255,9 @@ class AlertButton extends StatelessWidget {
     return Container(
       height: 70,
       width: double.infinity,
-      decoration: const BoxDecoration(
-          color: Color(0xFF9ED5FA),
+      decoration: BoxDecoration(
+          color: Color(0xFF4859A0).withOpacity(0.6),
+          //  Color(0xFF9ED5FA),
           borderRadius: BorderRadius.all(Radius.circular(15))),
       child: TextButton(
           onPressed: action,
@@ -265,7 +266,8 @@ class AlertButton extends StatelessWidget {
             style: const TextStyle(
               fontWeight: FontWeight.w600,
               fontSize: 18.5,
-              color: Color(0xFF1F1F1F),
+              color: Colors.white,
+              //  Color(0xFF1F1F1F),
             ),
           )),
     );
