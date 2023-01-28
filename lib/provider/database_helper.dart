@@ -10,17 +10,9 @@ class DatabaseHelper with ChangeNotifier {
   static final _databaseName = "database.db";
   static final _databaseVersion = 1;
 
-  static final table = 'user';
-  static final columnId = 'id';
-  static final columnName = 'name';
-  static final columnPrivateKey = 'privateKey';
-  static final columnTime = 'time';
-
-  // make this a singleton class
   DatabaseHelper._privateConstructor();
   static final DatabaseHelper instance = DatabaseHelper._privateConstructor();
 
-  // only have a single app-wide reference to the database
   static Database? _database;
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -41,39 +33,79 @@ class DatabaseHelper with ChangeNotifier {
         version: _databaseVersion, onCreate: _onCreate);
   }
 
-  // SQL code to create the database table
   Future _onCreate(Database db, int version) async {
     await db.execute('''
-          CREATE TABLE $table (
-            $columnId INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-            $columnName TEXT NOT NULL,
-            $columnPrivateKey TEXT NOT NULL,
-            $columnTime TEXT NOT NULL
+          CREATE TABLE account (
+       name VARCHAR(256),
+      private_key VARCHAR(256),
+      public_key VARCHAR(256),
+      address VARCHAR(256),
+      created_at int(11)
           )
           ''');
+
+    await db.execute('''
+       CREATE TABLE files (
+      file_key VARCHAR(256) PRIMARY KEY UNIQUE,
+      bid varchar(256),
+
+      name VARCHAR(1024),
+      contract_address VARCHAR(256),
+      file_size int(11),
+      merkle_root VARCHAR(256),
+      segments int(11),
+
+      timer_start int(11),
+      timer_end int(11),
+
+      time_created int(11),
+      last_verified int(11),
+
+      conclude_timeout int(11),
+      prove_timeout int(11),
+      sha256 VARCHAR(256),
+      is_encrypted int(1),
+
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+''');
+
     notifyListeners();
   }
 
-  // Helper methods
-  // Inserts a row in the database where each key in the Map is a column name
-  // and the value is the column value. The return value is the id of the
-  // inserted row.
-  Future<int> insertChildren(Map<String, dynamic> row) async {
+  Future<int> insertChildrenInAccountTable(Map<String, dynamic> row) async {
     Database db = await instance.database;
-    var rowId = await db.insert(table, row);
+    var rowId = await db.insert('account', row);
 
     return rowId;
   }
 
-  // All of the rows are returned as a list of maps, where each map is
-  // a key-value list of columns.
-  Future<List<Map<String, dynamic>>> queryAllChildrenRows() async {
+  Future<List<Map<String, dynamic>>>
+      queryAllChildrenRowsFromAccountTable() async {
     Database db = await instance.database;
-    return await db.query(table, limit: 1);
+    return await db.query('account', limit: 1);
   }
 
-  Future<void> truncateTable() async {
+  Future<void> truncateAccountTable() async {
     Database db = await instance.database;
-    await db.execute('DELETE FROM $table;');
+    await db.execute('DELETE FROM account;');
+  }
+
+  Future<int> insertChildrenInFilesTable(Map<String, dynamic> row) async {
+    Database db = await instance.database;
+    var rowId = await db.insert('files', row);
+
+    return rowId;
+  }
+
+  Future<List<Map<String, dynamic>>>
+      queryAllChildrenRowsFromFilesTable() async {
+    Database db = await instance.database;
+    return await db.query('files');
+  }
+
+  Future<void> truncatefilesTable() async {
+    Database db = await instance.database;
+    await db.execute('DELETE FROM files;');
   }
 }

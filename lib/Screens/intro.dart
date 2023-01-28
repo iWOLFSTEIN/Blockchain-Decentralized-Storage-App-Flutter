@@ -3,7 +3,6 @@ import 'dart:io';
 import 'dart:math';
 import 'package:blockchain_decentralized_storage_system/provider/database_provider.dart';
 import 'package:blockchain_decentralized_storage_system/screens/home.dart';
-import 'package:blockchain_decentralized_storage_system/services/login_state.dart';
 import 'package:blockchain_decentralized_storage_system/widgets/custom_alert_dialogues.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -12,7 +11,11 @@ import 'package:provider/provider.dart';
 import 'package:web3dart/crypto.dart';
 import 'package:web3dart/web3dart.dart';
 import 'package:path/path.dart';
+import 'package:web_socket_channel/io.dart';
 import '../utils/app_directory.dart';
+import 'package:http/http.dart' as http;
+
+import '../utils/constants.dart';
 
 class Intro extends StatefulWidget {
   const Intro({super.key});
@@ -25,6 +28,11 @@ class _IntroState extends State<Intro> {
   final privateKeyController = TextEditingController();
   final nameController = TextEditingController();
   final pageController = PageController(initialPage: 0);
+  late http.Client httpClient = http.Client();
+  late Web3Client ethClient =
+      Web3Client(HTTP_URL, httpClient, socketConnector: () {
+    return IOWebSocketChannel.connect(HTTP_URL).cast<String>();
+  });
   @override
   Widget build(BuildContext context) {
     var databaseProvider = Provider.of<DatabaseProvider>(context);
@@ -148,13 +156,19 @@ class _IntroState extends State<Intro> {
           textFieldName(),
           button(context, action: () async {
             if (nameController.text != '') {
+              var credentials = await ethClient
+                  .credentialsFromPrivateKey(privateKeyController.text);
+              final publicKey =
+                  bytesToHex(credentials.encodedPublicKey, include0x: true);
+              final accountAddress = credentials.address.hex;
               Map<String, dynamic> row = {
                 'name': nameController.text,
-                'privateKey': privateKeyController.text,
-                'time': DateTime.now().toString()
+                'private_key': privateKeyController.text,
+                'public_key': publicKey,
+                'address': accountAddress,
+                'created_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
               };
-              databaseProvider.addUserTableRow(row);
-              await LoginState.setLoginState(value: true);
+              databaseProvider.addAccountTableRow(row);
               Navigator.pushAndRemoveUntil(
                   context,
                   MaterialPageRoute(builder: (context) => Home()),

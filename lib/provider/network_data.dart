@@ -15,16 +15,16 @@ class NetworkData with ChangeNotifier {
     return ethers;
   }
 
-  getPublicKey(
-      {required String privateKey, required Web3Client ethClient}) async {
-    var credentials = await ethClient.credentialsFromPrivateKey(privateKey);
-    Uint8List publicKey = credentials.encodedPublicKey;
-    return bytesToHex(publicKey);
-  }
+  // getPublicKey(
+  //     {required String privateKey, required Web3Client ethClient}) async {
+  //   var credentials = await ethClient.credentialsFromPrivateKey(privateKey);
+  //   Uint8List publicKey = credentials.encodedPublicKey;
+  //   return bytesToHex(publicKey);
+  // }
 
-  getAddress(
-      {required String privateKey, required Web3Client ethClient}) async {
-    var credentials = await ethClient.credentialsFromPrivateKey(privateKey);
-    return credentials.address.hex;
-  }
+  // getAddress(
+  //     {required String privateKey, required Web3Client ethClient}) async {
+  //   var credentials = await ethClient.credentialsFromPrivateKey(privateKey);
+  //   return credentials.address.hex;
+  // }
 }

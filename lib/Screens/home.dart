@@ -54,11 +54,8 @@ class _HomeState extends State<Home> {
       var dataProvider = Provider.of<DataProvider>(this.context, listen: false);
       var databaseProvider =
           Provider.of<DatabaseProvider>(this.context, listen: false);
-      var privateKey = databaseProvider.items[0]['privateKey'];
+      var privateKey = databaseProvider.accountTableItems[0]['private_key'];
       dataProvider.fetchAndSyncBalance(
-          ethClient: ethClient, privateKey: privateKey);
-
-      dataProvider.fetchAndSyncAccountDetails(
           ethClient: ethClient, privateKey: privateKey);
     });
   }
@@ -80,6 +77,7 @@ class _HomeState extends State<Home> {
     //     ),
     //   );
     // }
+    DatabaseProvider databaseProvider = Provider.of<DatabaseProvider>(context);
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -110,92 +108,9 @@ class _HomeState extends State<Home> {
                   child: ListView(
                 padding: EdgeInsets.symmetric(vertical: 0, horizontal: 0),
                 children: [
-                  for (var i = 0; i < 10; i++)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 7.5,
-                      ),
-                      child: Material(
-                        elevation: 0,
-                        borderRadius: BorderRadius.all(Radius.circular(15)),
-                        child: Container(
-                          height: 80,
-                          width: double.infinity,
-                          padding: EdgeInsets.symmetric(horizontal: 15),
-                          child: Row(
-                            children: [
-                              Opacity(
-                                opacity: 0.5,
-                                child: Image.asset(
-                                  'images/file.png',
-                                  height: 22.5,
-                                  width: 22.5,
-                                ),
-                              ),
-                              const SizedBox(
-                                width: 15,
-                              ),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Container(
-                                        child: Text(
-                                          'Wedding Collection',
-                                          overflow: TextOverflow.ellipsis,
-                                          style: TextStyle(
-                                              color: Color(0xFF494949),
-                                              fontSize: 17),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  SizedBox(
-                                    height: 10,
-                                  ),
-                                  Row(
-                                    children: [
-                                      Container(
-                                        child: Text(
-                                          '20 GB',
-                                          overflow: TextOverflow.ellipsis,
-                                          style: TextStyle(
-                                              fontSize: 12.5,
-                                              color: Color(0xFF6A6A6A)),
-                                        ),
-                                      ),
-                                      SizedBox(
-                                        width: 15,
-                                      ),
-                                      Text(
-                                        '25 Apr, 2022',
-                                        style: TextStyle(
-                                            fontSize: 12.5,
-                                            color: Color(0xFF6A6A6A)),
-                                      ),
-                                    ],
-                                  ),
-                                  //   ],
-                                  // ),
-                                ],
-                              ),
-                              Expanded(
-                                child: SizedBox(
-                                    // width: 8,
-                                    ),
-                              ),
-                              Icon(
-                                Icons.cloud_download,
-                                color: Color(0xFF4859A0),
-                                size: 25,
-                              )
-                            ],
-                          ),
-                        ),
-                      ),
-                    )
+                  for (Map<String, dynamic> row
+                      in databaseProvider.filesTableItems)
+                    uploadedFileTile(row: row)
                 ],
               ))
             ],
@@ -211,6 +126,93 @@ class _HomeState extends State<Home> {
           Icons.cloud_upload,
           color: Colors.white,
           size: 25,
+        ),
+      ),
+    );
+  }
+
+  Padding uploadedFileTile({required Map<String, dynamic> row}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        vertical: 7.5,
+      ),
+      child: Material(
+        elevation: 0,
+        borderRadius: BorderRadius.all(Radius.circular(15)),
+        child: Container(
+          height: 80,
+          width: double.infinity,
+          padding: EdgeInsets.symmetric(horizontal: 15),
+          child: Row(
+            children: [
+              Opacity(
+                opacity: 0.5,
+                child: Image.asset(
+                  (row['is_encrypted'] == 1)
+                      ? 'images/encrypted_file.png'
+                      : 'images/file.png',
+                  height: 25,
+                  width: 25,
+                ),
+              ),
+              const SizedBox(
+                width: 15,
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        child: Text(
+                          row['name'],
+                          overflow: TextOverflow.ellipsis,
+                          style:
+                              TextStyle(color: Color(0xFF494949), fontSize: 17),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(
+                    height: 10,
+                  ),
+                  Row(
+                    children: [
+                      Container(
+                        child: Text(
+                          '${(row['file_size'] / 1024).ceil()}kb',
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                              fontSize: 12.5, color: Color(0xFF6A6A6A)),
+                        ),
+                      ),
+                      SizedBox(
+                        width: 15,
+                      ),
+                      Text(
+                        row['created_at'].toString().split(' ')[0],
+                        style:
+                            TextStyle(fontSize: 12.5, color: Color(0xFF6A6A6A)),
+                      ),
+                    ],
+                  ),
+                  //   ],
+                  // ),
+                ],
+              ),
+              Expanded(
+                child: SizedBox(
+                    // width: 8,
+                    ),
+              ),
+              Icon(
+                Icons.cloud_download,
+                color: Color(0xFF4859A0),
+                size: 25,
+              )
+            ],
+          ),
         ),
       ),
     );

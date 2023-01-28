@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'package:blockchain_decentralized_storage_system/services/login_state.dart';
 import 'package:path/path.dart';
 
 import 'package:flutter/foundation.dart';
@@ -179,7 +178,6 @@ class CustomListAlertDialogue extends StatelessWidget {
                 context,
                 MaterialPageRoute(builder: (context) => Home()),
                 (route) => false);
-            await LoginState.setLoginState(value: true);
           });
         },
         leading: CircleAvatar(
@@ -203,7 +201,7 @@ class CustomListAlertDialogue extends StatelessWidget {
         child: Container(
           height: 500,
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 30),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 25),
           decoration: const BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.all(Radius.circular(25))),

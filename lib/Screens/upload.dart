@@ -1,26 +1,35 @@
-import 'dart:math';
+import 'dart:convert';
 import 'dart:io';
-
+import 'package:blockchain_decentralized_storage_system/utils/constants.dart';
+import 'package:crypto/crypto.dart';
+import 'package:encrypt/encrypt.dart' as en;
 import 'package:alert/alert.dart';
-import 'package:blockchain_decentralized_storage_system/provider/data_provider.dart';
+import 'package:blockchain_decentralized_storage_system/provider/database_provider.dart';
 import 'package:blockchain_decentralized_storage_system/services/generated/storage-node.pb.dart';
 import 'package:blockchain_decentralized_storage_system/services/rpc_calls.dart';
 import 'package:blockchain_decentralized_storage_system/structures/node.dart';
 import 'package:blockchain_decentralized_storage_system/utils/alerts.dart';
 import 'package:blockchain_decentralized_storage_system/widgets/custom_alert_dialogues.dart';
 import 'package:dio/dio.dart';
+import 'package:encrypt/encrypt.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:fixnum/fixnum.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hex/hex.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:progress_indicators/progress_indicators.dart';
 import 'package:provider/provider.dart';
-// import 'package:vs_scrollbar/vs_scrollbar.dart';
+import 'package:web3dart/crypto.dart';
 import 'package:web3dart/web3dart.dart';
-
+import 'package:path/path.dart';
+import 'package:web_socket_channel/io.dart';
+import '../services/smart_contract_helper_methods.dart';
 import '../utils/compute_merkle_tree.dart';
 import '../widgets/app_branding.dart';
+
+import 'package:web3dart/src/utils/length_tracking_byte_sink.dart';
+import 'package:http/http.dart' as http;
 
 // ignore: must_be_immutable
 class Upload extends StatefulWidget {
@@ -35,9 +44,12 @@ class Upload extends StatefulWidget {
 }
 
 class _UploadState extends State<Upload> {
-  // var selectedDate = DateTime.now();
+  late http.Client httpClient = http.Client();
+  late Web3Client ethClient =
+      Web3Client(HTTP_URL, httpClient, socketConnector: () {
+    return IOWebSocketChannel.connect(HTTP_URL).cast<String>();
+  });
   var dateController = TextEditingController();
-  bool? _isChecked = false;
   List<NodePingData> nodesData = [];
   bool areAllThePingRequestsCompleted = false;
   bool nodeListHasData = false;
@@ -46,18 +58,20 @@ class _UploadState extends State<Upload> {
       r'^(0[1-9]|[12][0-9]|3[01])[\/](0[1-9]|1[012])[\/]((?:19|20)\d\d)$');
   String fileMerkleRoot = '';
   InitTransactionResponse? serverResponse;
+  bool isEncryptingFile = false;
   bool isUploading = false;
   double progressBarValue = 0.0;
 
-  @override
-  void initState() {
-    // TODO: implement initState
-    super.initState();
-    calculateMerkleRoot();
-  }
+  int timeStart = 0;
+  int timeEnd = 0;
+
+  int isEncrypted = 0;
 
   @override
   Widget build(BuildContext context) {
+    final databaseProvider = Provider.of<DatabaseProvider>(context);
+    print(
+        'Account Address: ${databaseProvider.accountTableItems[0]['address']}');
     return Scaffold(
       backgroundColor: Colors.white,
       resizeToAvoidBottomInset: false,
@@ -65,7 +79,7 @@ class _UploadState extends State<Upload> {
         child: isUploading
             ? page3()
             : arePingRequestsSent
-                ? page2()
+                ? page2(databaseProvider: databaseProvider)
                 : page1(datePickerAction: () async {
                     await datePicker();
                   }),
@@ -73,7 +87,7 @@ class _UploadState extends State<Upload> {
     );
   }
 
-  Container page3({datePickerAction}) {
+  Container page3() {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -92,7 +106,12 @@ class _UploadState extends State<Upload> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                if (fileMerkleRoot == '')
+                if (isEncryptingFile)
+                  const Text(
+                    'Encrypting File...',
+                    style: TextStyle(fontSize: 18.5, color: Color(0xFF494949)),
+                  ),
+                if (fileMerkleRoot == '' && !isEncryptingFile)
                   const Text(
                     'Calculating Hash...',
                     style: TextStyle(fontSize: 18.5, color: Color(0xFF494949)),
@@ -130,7 +149,7 @@ class _UploadState extends State<Upload> {
     );
   }
 
-  Container page2({datePickerAction}) {
+  Container page2({required DatabaseProvider databaseProvider}) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -178,42 +197,60 @@ class _UploadState extends State<Upload> {
                         ),
                       ),
                     )
-              : serverTiles()
+              : serverTiles(databaseProvider: databaseProvider)
         ],
       ),
     );
   }
 
-  Expanded serverTiles() {
+  Expanded serverTiles({required DatabaseProvider databaseProvider}) {
     return Expanded(
       child: SingleChildScrollView(
         child: Column(
-          children: [for (var serverNode in nodesData) serverTile(serverNode)],
+          children: [
+            for (var serverNode in nodesData)
+              serverTile(serverNode, databaseProvider: databaseProvider)
+          ],
         ),
       ),
     );
   }
 
-  Widget serverTile(NodePingData serverNode) {
+  Widget serverTile(NodePingData serverNode,
+      {required DatabaseProvider databaseProvider}) {
     return GestureDetector(
       onTap: () async {
         setState(() {
           isUploading = true;
         });
-        try {
-          transactionRequestToServer(serverNode).then((response) async {
-            await uploadFile(
-                file: widget.file!, initTransactionResponse: serverResponse!);
-            Navigator.pop(context);
-            Alert(message: 'File uploaded').show();
+        // try {
+        calculateMerkleRoot(databaseProvider).then((value) {
+          transactionRequestToServer(serverNode, databaseProvider)
+              .then((response) {
+            uploadFile(
+                    file: widget.file!,
+                    initTransactionResponse: serverResponse!)
+                .then((progress) {
+              concludeTransactionWithServer(
+                      serverNode: serverNode,
+                      databaseProvider: databaseProvider)
+                  .then((event) async {
+                await saveFileReferenceToDatabase(
+                    databaseProvider: databaseProvider,
+                    nodePingData: serverNode);
+                Navigator.pop(this.context);
+                Alert(message: 'File uploaded').show();
+              });
+            });
           });
-        } catch (e) {
-          setState(() {
-            isUploading = false;
-          });
-          showErrorAlert(context);
-          e.toString();
-        }
+        });
+        // } catch (e) {
+        //   setState(() {
+        //     isUploading = false;
+        //   });
+        //   showErrorAlert(this.context);
+        //   e.toString();
+        // }
       },
       child: Row(
         children: [
@@ -399,9 +436,6 @@ class _UploadState extends State<Upload> {
     bool isDateDurationCorrect = false;
     if (dateController.text != '')
       try {
-        // var dateList = dateController.text.split('/');
-        // var selectedDate = DateTime(int.parse(dateList[2]),
-        //     int.parse(dateList[1]), int.parse(dateList[0]));
         var selectedDate = getSelectedDate();
 
         isDateDurationCorrect =
@@ -454,10 +488,10 @@ class _UploadState extends State<Upload> {
         Row(
           children: [
             Checkbox(
-              value: _isChecked,
+              value: isEncrypted == 1 ? true : false,
               onChanged: (bool? value) {
                 setState(() {
-                  _isChecked = value;
+                  isEncrypted = value == true ? 1 : 0;
                 });
               },
             ),
@@ -546,7 +580,7 @@ class _UploadState extends State<Upload> {
 
   datePicker() async {
     DateTime? picked = await showDatePicker(
-      context: context,
+      context: this.context,
       initialDate: DateTime.now(),
       firstDate: DateTime(2015, 8),
       lastDate: DateTime(2101),
@@ -580,10 +614,7 @@ class _UploadState extends State<Upload> {
   }
 
   pingRequestToServers() async {
-    // var dateList = dateController.text.split('/');
     var selectedDate = getSelectedDate();
-    //  DateTime(
-    //     int.parse(dateList[2]), int.parse(dateList[1]), int.parse(dateList[0]));
     var duration = selectedDate.difference(DateTime.now()).inSeconds;
     setState(() {
       arePingRequestsSent = true;
@@ -638,11 +669,20 @@ class _UploadState extends State<Upload> {
     return selectedDate;
   }
 
-  transactionRequestToServer(NodePingData nodePingData) async {
-    var dataProvider = Provider.of<DataProvider>(context, listen: false);
+  transactionRequestToServer(
+      NodePingData nodePingData, DatabaseProvider databaseProvider) async {
+    // try {
     StorageNode storageNode = StorageNode(address: nodePingData.node.url);
     var currentDate = DateTime.now();
     var selectedDate = getSelectedDate();
+
+    final start = currentDate.millisecondsSinceEpoch ~/ 1000;
+    final end = selectedDate.millisecondsSinceEpoch ~/ 1000;
+
+    setState(() {
+      timeStart = start;
+      timeEnd = end;
+    });
 
     InitTransactionResponse initTransactionResponse =
         await storageNode.initTransaction(
@@ -650,44 +690,224 @@ class _UploadState extends State<Upload> {
             segmentsCount: Int64((widget.fileMetaData!.size / 1024).ceil()),
             fileHash: fileMerkleRoot,
             bid: nodePingData.bidPrice,
-            userAddress: dataProvider.accountAddress,
-            timeStart: Int64(currentDate.millisecondsSinceEpoch ~/ 1000),
-            timeEnd: Int64(selectedDate.millisecondsSinceEpoch ~/ 1000),
+            userAddress: databaseProvider.accountTableItems[0]['address'],
+            timeStart: Int64(start),
+            timeEnd: Int64(end),
             concludeTimeout: Int64(40),
             proveTimeout: Int64(40));
 
     setState(() {
       serverResponse = initTransactionResponse;
     });
+    // } catch (e) {
+    //   setState(() {
+    //     isUploading = false;
+    //   });
+    //   showErrorAlert(this.context);
+    //   e.toString();
+    // }
   }
 
-  calculateMerkleRoot() async {
-    List<Uint8List> merkleTree = await fileMerkleTree(widget.file);
+  Future<void> calculateMerkleRoot(DatabaseProvider databaseProvider) async {
+    // try {
+    if (isEncrypted == 1) {
+      setState(() {
+        isEncryptingFile = true;
+      });
+    }
+    // throw ('something');
+    Uint8List fileBytes = await widget.file!.readAsBytes();
+    if (isEncrypted == 1) {
+      fileBytes = await encryptFile(
+          databaseProvider: databaseProvider, fileBytes: fileBytes);
+    }
+    List<Uint8List> merkleTree = fileMerkleTree(fileBytes);
     String merkleRoot = HEX.encode(merkleTree[merkleTree.length - 1]);
     setState(() {
       fileMerkleRoot = merkleRoot;
     });
+    // print(fileMerkleRoot);
+    // } catch (e) {
+    //   setState(() {
+    //     isUploading = false;
+    //   });
+    //   showErrorAlert(this.context);
+    //   e.toString();
+    // }
+  }
+
+  Future<Uint8List> encryptFile(
+      {required DatabaseProvider databaseProvider,
+      required Uint8List fileBytes}) async {
+    String privateKey = databaseProvider.accountTableItems[0]['address'];
+    var bytes = utf8.encode(privateKey);
+    var digest = sha256.convert(bytes);
+
+    // print('private key: $privateKey');
+    // print('sha256 encryption: ${digest.toString()}');
+    // print('key for encryption: ${digest.toString().substring(0, 32)}');
+
+    final key = en.Key.fromUtf8(digest.toString().substring(0, 32));
+    final iv = IV.fromUtf8(iv_key);
+    final encrypter = Encrypter(AES(key, mode: AESMode.cbc));
+    Encrypted encrypted = encrypter.encryptBytes(fileBytes, iv: iv);
+    Uint8List encryptedFileBytes = encrypted.bytes;
+    await copyEncryptedFileToTempDir(encryptedFileBytes);
+
+    return encryptedFileBytes;
+  }
+
+  copyEncryptedFileToTempDir(Uint8List encryptedFileBytes) async {
+    var tempDir = await getTemporaryDirectory();
+    String newPath = join(tempDir.path, widget.fileMetaData!.name);
+    File file = await File(newPath).writeAsBytes(encryptedFileBytes);
+    setState(() {
+      widget.file = file;
+      isEncryptingFile = false;
+    });
+  }
+
+  deleteEncryptedFileFromTempDir() async {
+    if (isEncrypted == 1) {
+      await widget.file!.delete();
+    }
   }
 
   uploadFile(
       {required File file,
       required InitTransactionResponse initTransactionResponse}) async {
-    var dio = Dio();
-    FormData formData = new FormData.fromMap({"file": file});
-    var response = await dio.post(
-      "${initTransactionResponse.httpURL}",
-      data: formData,
-      options: Options(
-        followRedirects: false,
-        // will not throw errors
-        validateStatus: (status) => true,
-        headers: {"Authorization": "Bearer ${initTransactionResponse.jWT}"},
-      ),
-      onSendProgress: (count, total) {
-        setState(() {
-          progressBarValue = total / count;
-        });
-      },
-    );
+    try {
+      var dio = Dio();
+      FormData formData = new FormData.fromMap({
+        "file": MultipartFile.fromFile(file.path,
+            filename: widget.fileMetaData!.name)
+      });
+      await dio.post(
+        "${initTransactionResponse.httpURL}",
+        data: formData,
+        options: Options(
+          followRedirects: false,
+          validateStatus: (status) => true,
+          headers: {"Authorization": "Bearer ${initTransactionResponse.jWT}"},
+        ),
+        onSendProgress: (count, total) {
+          if (mounted)
+            setState(() {
+              progressBarValue = total / count;
+            });
+        },
+      ).then((value) async {
+        await deleteEncryptedFileFromTempDir();
+      });
+    } catch (e) {
+      setState(() {
+        isUploading = false;
+      });
+      showErrorAlert(this.context);
+      e.toString();
+    }
+  }
+
+  concludeTransactionWithServer(
+      {required NodePingData serverNode,
+      required DatabaseProvider databaseProvider}) async {
+    // try {
+    String address = databaseProvider.accountTableItems[0]['address'];
+    String privateKey = databaseProvider.accountTableItems[0]['private_key'];
+    var credentials = await ethClient.credentialsFromPrivateKey(privateKey);
+    EthereumAddress accountAddress = EthereumAddress(hexToBytes(address));
+    Uint8List fileMerkleRootBytes = hexToBytes(fileMerkleRoot);
+    final contract = await loadContract(
+        name: storageNode,
+        path: "assets/storage-contract-abi.json",
+        address: serverNode.node.address);
+    final ethFunction = contract.function(concludeTransaction);
+
+    await ethClient.sendTransaction(
+        credentials,
+        Transaction.callContract(
+          contract: contract,
+          function: ethFunction,
+          parameters: [
+            BigInt.from(1),
+            accountAddress,
+            fileMerkleRootBytes,
+            BigInt.from(widget.fileMetaData!.size),
+            BigInt.from(timeStart),
+            BigInt.from(timeEnd),
+            BigInt.from(40),
+            BigInt.from(40),
+            BigInt.from((widget.fileMetaData!.size / 1024).ceil()),
+            BigInt.from(int.parse(serverNode.bidPrice))
+          ],
+        ),
+        chainId: 420);
+    // await querySmartContract(
+    //     functionName: concludeTransaction,
+    // args: [
+    //   BigInt.from(1),
+    //   accountAddress,
+    //   fileMerkleRootBytes,
+    //   BigInt.from(widget.fileMetaData!.size),
+    //   BigInt.from(timeStart),
+    //   BigInt.from(timeEnd),
+    //   BigInt.from(40),
+    //   BigInt.from(40),
+    //   BigInt.from((widget.fileMetaData!.size / 1024).ceil()),
+    //   BigInt.from(int.parse(serverNode.bidPrice))
+    // ],
+    //     ethClient: ethClient,
+    //     contractName: storageNode,
+    //     contractAddress: serverNode.node.address,
+    //     contractAbiPath: "assets/storage-contract-abi.json");
+    // } catch (e) {
+    //   setState(() {
+    //     isUploading = false;
+    //   });
+    //   showErrorAlert(this.context);
+    //   e.toString();
+    // }
+  }
+
+  saveFileReferenceToDatabase(
+      {required DatabaseProvider databaseProvider,
+      required NodePingData nodePingData}) {
+    final secondsSinceEpoch = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    Map<String, dynamic> row = {
+      'file_key': getfileHash(databaseProvider: databaseProvider),
+      'bid': nodePingData.bidPrice,
+      'name': widget.fileMetaData!.name,
+      'contract_address': nodePingData.node.address,
+      'file_size': widget.fileMetaData!.size,
+      'merkle_root': fileMerkleRoot,
+      'segments': (widget.fileMetaData!.size / 1024).ceil(),
+      'timer_start': timeStart,
+      'timer_end': timeEnd,
+      'time_created': secondsSinceEpoch,
+      'last_verified': secondsSinceEpoch,
+      'conclude_timeout': 40,
+      'prove_timeout': 40,
+      'sha256': '',
+      'is_encrypted': isEncrypted,
+    };
+    databaseProvider.addFilesTableRow(row);
+  }
+
+  getfileHash({required DatabaseProvider databaseProvider}) {
+    String address = databaseProvider.accountTableItems[0]['address'];
+
+    EthereumAddress data = EthereumAddress(hexToBytes(address));
+    LengthTrackingByteSink buffer = LengthTrackingByteSink();
+
+    final addressType = AddressType();
+    addressType.encode(data, buffer);
+
+    BytesBuilder fileHashList = BytesBuilder()
+      ..add(buffer.asBytes())
+      ..add(hexToBytes(fileMerkleRoot));
+
+    String fileHash = bytesToHex(chunkSha3Encoding(fileHashList.toBytes()));
+
+    return fileHash;
   }
 }

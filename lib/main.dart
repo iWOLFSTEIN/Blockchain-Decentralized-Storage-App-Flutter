@@ -5,7 +5,6 @@ import 'package:blockchain_decentralized_storage_system/screens/home.dart';
 import 'package:blockchain_decentralized_storage_system/screens/intro.dart';
 import 'package:blockchain_decentralized_storage_system/provider/database_helper.dart';
 import 'package:blockchain_decentralized_storage_system/screens/upload.dart';
-import 'package:blockchain_decentralized_storage_system/services/login_state.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
@@ -33,17 +32,24 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (context) => NetworkData()),
 
         ChangeNotifierProxyProvider<NetworkData, DataProvider>(
-            create: (context) => DataProvider(NetworkData(), 0.0, '', ''),
+            create: (context) => DataProvider(
+                  NetworkData(), 0.0,
+                  //  '', ''
+                ),
             update: (context, networkData, dataProvider) => DataProvider(
-                networkData,
-                dataProvider!.balance,
-                dataProvider.accountAddress,
-                dataProvider.publicKey)),
+                  networkData,
+                  dataProvider!.balance,
+                  // dataProvider.accountAddress,
+                  // dataProvider.publicKey
+                )),
 
         ChangeNotifierProxyProvider<DatabaseHelper, DatabaseProvider>(
-            create: (context) => DatabaseProvider([], DatabaseHelper.instance),
-            update: (context, database, databaseProvider) =>
-                DatabaseProvider(databaseProvider!.items, database)),
+            create: (context) =>
+                DatabaseProvider([], [], DatabaseHelper.instance),
+            update: (context, database, databaseProvider) => DatabaseProvider(
+                databaseProvider!.accountTableItems,
+                databaseProvider.filesTableItems,
+                database)),
       ],
       child: StartApp(),
     );
@@ -67,10 +73,13 @@ class _StartAppState extends State<StartApp> {
   }
 
   getUserLoginState() async {
-    bool loginState = await LoginState.getLoginState();
-    setState(() {
-      isLoggedIn = loginState;
-    });
+    List<Map<String, dynamic>> accountTableData =
+        await DatabaseHelper.instance.queryAllChildrenRowsFromAccountTable();
+    if (!listEquals(accountTableData, [])) {
+      setState(() {
+        isLoggedIn = true;
+      });
+    }
     FlutterNativeSplash.remove();
   }
 

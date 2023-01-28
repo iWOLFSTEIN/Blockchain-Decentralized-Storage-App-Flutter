@@ -2,27 +2,46 @@ import 'package:flutter/cupertino.dart';
 import 'database_helper.dart';
 
 class DatabaseProvider with ChangeNotifier {
-  DatabaseProvider(this._items, this.database) {
+  DatabaseProvider(
+      this._accountTableItems, this._filesTableItems, this.database) {
     fetchAndSetData();
   }
 
   DatabaseHelper database;
 
-  List<Map<String, dynamic>> _items = [];
-  List<Map<String, dynamic>> get items => [..._items];
+  List<Map<String, dynamic>> _accountTableItems = [];
+  List<Map<String, dynamic>> get accountTableItems => [..._accountTableItems];
+
+  List<Map<String, dynamic>> _filesTableItems = [];
+  List<Map<String, dynamic>> get filesTableItems => [..._filesTableItems];
 
   Future<void> fetchAndSetData() async {
-    final dataList = await database.queryAllChildrenRows();
-    _items = dataList;
+    final allAccountTableRows =
+        await database.queryAllChildrenRowsFromAccountTable();
+    final allFilesTableRows =
+        await database.queryAllChildrenRowsFromFilesTable();
+
+    _accountTableItems = allAccountTableRows;
+    _filesTableItems = allFilesTableRows;
+
     notifyListeners();
   }
 
-  addUserTableRow(row) async {
-    await database.insertChildren(row);
+  addAccountTableRow(row) async {
+    await database.insertChildrenInAccountTable(row);
     fetchAndSetData();
   }
 
-  deleteDatabase() async {
-    await database.truncateTable();
+  addFilesTableRow(row) async {
+    await database.insertChildrenInFilesTable(row);
+    fetchAndSetData();
+  }
+
+  deleteAccountTableData() async {
+    await database.truncateAccountTable();
+  }
+
+  deleteFilesTableData() async {
+    await database.truncatefilesTable();
   }
 }

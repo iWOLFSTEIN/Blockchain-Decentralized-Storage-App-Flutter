@@ -16,3 +16,8 @@ var getStorageContracts = "getStorageContracts";
 
 // StorageNode Methods
 var host = "HOST";
+var concludeTransaction = "concludeTransaction";
+
+// Encryption
+
+final iv_key = 'a0d336ccd2aee9a6';

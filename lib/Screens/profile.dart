@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:alert/alert.dart';
 import 'package:blockchain_decentralized_storage_system/provider/database_provider.dart';
 import 'package:blockchain_decentralized_storage_system/screens/intro.dart';
-import 'package:blockchain_decentralized_storage_system/services/login_state.dart';
 import 'package:blockchain_decentralized_storage_system/utils/constants.dart';
 import 'package:blockchain_decentralized_storage_system/widgets/app_branding.dart';
 import 'package:flutter/material.dart';
@@ -133,8 +132,8 @@ class _ProfileState extends State<Profile> {
   deleteDatabaseAndLogout(context, databaseProvider) async {
     Navigator.pushAndRemoveUntil(context,
         MaterialPageRoute(builder: (context) => Intro()), (route) => false);
-    await LoginState.setLoginState(value: false);
-    databaseProvider.deleteDatabase();
+    databaseProvider.deleteAccountTableData();
+    databaseProvider.deleteFilesTableData();
   }
 
   saveAccountAlert(context, databaseProvider,
@@ -153,8 +152,8 @@ class _ProfileState extends State<Profile> {
 
   saveDatabase(databaseProvider) async {
     try {
-      var newPath =
-          await getAppDirectory() + "/${databaseProvider.items[0]['name']}.db";
+      var newPath = await getAppDirectory() +
+          "/${databaseProvider.accountTableItems[0]['name']}.db";
       Directory documentsDirectory = await getApplicationDocumentsDirectory();
       String path = join(documentsDirectory.path, "database.db");
       File databaseFile = File(path);
@@ -203,8 +202,11 @@ class _ProfileState extends State<Profile> {
   }
 
   Row userInformation(context, databaseProvider) {
-    var name = databaseProvider.items[0]['name'];
-    var time = databaseProvider.items[0]['time'].split('.')[0].split(' ')[0];
+    var name = databaseProvider.accountTableItems[0]['name'];
+    int secondsSinceEpoch = databaseProvider.accountTableItems[0]['created_at'];
+    var time = DateTime.fromMillisecondsSinceEpoch(secondsSinceEpoch * 1000)
+        .toString()
+        .split(' ')[0];
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
