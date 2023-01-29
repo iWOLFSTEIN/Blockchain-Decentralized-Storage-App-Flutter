@@ -52,7 +52,7 @@ class _ProfileState extends State<Profile> {
               trailing: Row(
                 children: [
                   Text(
-                    '${dataProvider.balance} ',
+                    '${dataProvider.balance.toStringAsFixed(5)} ',
                     style: TextStyle(fontSize: 17),
                   ),
                   ImageIcon(

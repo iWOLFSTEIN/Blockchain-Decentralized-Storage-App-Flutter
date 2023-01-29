@@ -228,16 +228,21 @@ class _UploadState extends State<Upload> {
         });
         try {
           String merkleRoot = await calculateMerkleRoot(databaseProvider);
+          print('merkle');
+          print(merkleRoot);
           InitTransactionResponse transactionResponse =
               await transactionRequestToServer(serverNode, databaseProvider);
           dynamic uploadResponse = await uploadFile(
               file: widget.file!, initTransactionResponse: transactionResponse);
           if (uploadResponse['ok']) {
-            String concludeTransactionResponse =
-                await concludeTransactionWithServer(
-                    serverNode: serverNode, databaseProvider: databaseProvider);
-            await saveFileReferenceToDatabase(
-                databaseProvider: databaseProvider, nodePingData: serverNode);
+            Future.delayed(Duration(seconds: 2), () async {
+              String concludeTransactionResponse =
+                  await concludeTransactionWithServer(
+                      serverNode: serverNode,
+                      databaseProvider: databaseProvider);
+              await saveFileReferenceToDatabase(
+                  databaseProvider: databaseProvider, nodePingData: serverNode);
+            });
           }
         } catch (e) {
           setState(() {
@@ -633,8 +638,6 @@ class _UploadState extends State<Upload> {
             .then((response) {
           NodePingData nodePingData = NodePingData(
               bidPrice: response.bidPrice,
-              //  EtherAmount.inWei(BigInt.parse(response.bidPrice))
-              //     .getValueInUnit(EtherUnit.ether),
               canStore: response.canStore,
               responseTimeInMilliseconds: stopwatch.elapsed.inMilliseconds,
               node: widget.serversUrls![index]);
@@ -693,30 +696,21 @@ class _UploadState extends State<Upload> {
             userAddress: databaseProvider.accountTableItems[0]['address'],
             timeStart: Int64(start),
             timeEnd: Int64(end),
-            concludeTimeout: Int64(40),
-            proveTimeout: Int64(40));
+            concludeTimeout: Int64(216000),
+            proveTimeout: Int64(216000));
 
     setState(() {
       serverResponse = initTransactionResponse;
     });
     return initTransactionResponse;
-    // } catch (e) {
-    //   setState(() {
-    //     isUploading = false;
-    //   });
-    //   showErrorAlert(this.context);
-    //   e.toString();
-    // }
   }
 
   Future<String> calculateMerkleRoot(DatabaseProvider databaseProvider) async {
-    // try {
     if (isEncrypted == 1) {
       setState(() {
         isEncryptingFile = true;
       });
     }
-    // throw ('something');
     Uint8List fileBytes = await widget.file!.readAsBytes();
     if (isEncrypted == 1) {
       fileBytes = await encryptFile(
@@ -728,14 +722,6 @@ class _UploadState extends State<Upload> {
       fileMerkleRoot = merkleRoot;
     });
     return fileMerkleRoot;
-    // print(fileMerkleRoot);
-    // } catch (e) {
-    //   setState(() {
-    //     isUploading = false;
-    //   });
-    //   showErrorAlert(this.context);
-    //   e.toString();
-    // }
   }
 
   Future<Uint8List> encryptFile(
@@ -801,38 +787,16 @@ class _UploadState extends State<Upload> {
     );
 
     return jsonDecode(response.data);
-    // .then((value) async {
-    //   await deleteEncryptedFileFromTempDir();
-    // }).catchError((e) {
-    //   setState(() {
-    //     isUploading = false;
-    //   });
-    //   showErrorAlert(this.context);
-    //   e.toString();
-    // });
-    //   print(response.data);
-    //   print(response.headers);
-    //   print(response.extra);
-    //   print(response.requestOptions.headers);
-    // } catch (e) {
-    // setState(() {
-    //   isUploading = false;
-    // });
-    // showErrorAlert(this.context);
-    // e.toString();
-    // }
   }
 
   Future<String> concludeTransactionWithServer(
       {required NodePingData serverNode,
       required DatabaseProvider databaseProvider}) async {
-    // try {
     String address = databaseProvider.accountTableItems[0]['address'];
     String privateKey = databaseProvider.accountTableItems[0]['private_key'];
     var credentials = await ethClient.credentialsFromPrivateKey(privateKey);
     EthereumAddress accountAddress = EthereumAddress(hexToBytes(address));
     Uint8List fileMerkleRootBytes = hexToBytes(fileMerkleRoot);
-    // Uint8 callerType = uint;
 
     final contract = await loadContract(
         name: storageNode,
@@ -845,47 +809,22 @@ class _UploadState extends State<Upload> {
         Transaction.callContract(
           contract: contract,
           function: ethFunction,
+          value: EtherAmount.inWei(BigInt.from(int.parse(serverNode.bidPrice))),
           parameters: [
             BigInt.from(1),
-            // 1,
             accountAddress,
             fileMerkleRootBytes,
             BigInt.from(widget.fileMetaData!.size),
             BigInt.from(timeStart),
             BigInt.from(timeEnd),
-            BigInt.from(40),
-            BigInt.from(40),
+            BigInt.from(216000),
+            BigInt.from(216000),
             BigInt.from((widget.fileMetaData!.size / 1024).ceil()),
             BigInt.from(int.parse(serverNode.bidPrice))
           ],
         ),
         chainId: 420);
     return response;
-    // await querySmartContract(
-    //     functionName: concludeTransaction,
-    // args: [
-    //   BigInt.from(1),
-    //   accountAddress,
-    //   fileMerkleRootBytes,
-    //   BigInt.from(widget.fileMetaData!.size),
-    //   BigInt.from(timeStart),
-    //   BigInt.from(timeEnd),
-    //   BigInt.from(40),
-    //   BigInt.from(40),
-    //   BigInt.from((widget.fileMetaData!.size / 1024).ceil()),
-    //   BigInt.from(int.parse(serverNode.bidPrice))
-    // ],
-    //     ethClient: ethClient,
-    //     contractName: storageNode,
-    //     contractAddress: serverNode.node.address,
-    //     contractAbiPath: "assets/storage-contract-abi.json");
-    // } catch (e) {
-    //   setState(() {
-    //     isUploading = false;
-    //   });
-    //   showErrorAlert(this.context);
-    //   e.toString();
-    // }
   }
 
   Future<void> saveFileReferenceToDatabase(
@@ -904,13 +843,19 @@ class _UploadState extends State<Upload> {
       'timer_end': timeEnd,
       'time_created': secondsSinceEpoch,
       'last_verified': secondsSinceEpoch,
-      'conclude_timeout': 40,
-      'prove_timeout': 40,
+      'conclude_timeout': 216000,
+      'prove_timeout': 216000,
       'sha256': '',
       'is_encrypted': isEncrypted,
     };
     databaseProvider.addFilesTableRow(row);
     await deleteEncryptedFileFromTempDir();
+    exitToHomeScreenWithAnAlert();
+  }
+
+  exitToHomeScreenWithAnAlert() {
+    Navigator.pop(this.context);
+    Alert(message: 'Uploaded successfully').show();
   }
 
   getfileHash({required DatabaseProvider databaseProvider}) {
