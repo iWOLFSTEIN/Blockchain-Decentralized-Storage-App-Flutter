@@ -159,54 +159,58 @@ class _HomeState extends State<Home> {
               const SizedBox(
                 width: 15,
               ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Row(
+              Expanded(
+                child: Container(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Container(
-                        child: Text(
-                          row['name'],
-                          overflow: TextOverflow.ellipsis,
-                          style:
-                              TextStyle(color: Color(0xFF494949), fontSize: 17),
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(
-                    height: 10,
-                  ),
-                  Row(
-                    children: [
-                      Container(
-                        child: Text(
-                          // '${(row['file_size'] / 1024).ceil()}kb',
-                          '${formatBytes(row['file_size'])}',
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                              fontSize: 12.5, color: Color(0xFF6A6A6A)),
-                        ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Container(
+                              child: Text(
+                                row['name'],
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                    color: Color(0xFF494949), fontSize: 17),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       SizedBox(
-                        width: 15,
+                        height: 10,
                       ),
-                      Text(
-                        row['created_at'].toString().split(' ')[0],
-                        style:
-                            TextStyle(fontSize: 12.5, color: Color(0xFF6A6A6A)),
+                      Row(
+                        children: [
+                          Container(
+                            child: Text(
+                              // '${(row['file_size'] / 1024).ceil()}kb',
+                              '${formatBytes(row['file_size'])}',
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                  fontSize: 12.5, color: Color(0xFF6A6A6A)),
+                            ),
+                          ),
+                          SizedBox(
+                            width: 15,
+                          ),
+                          Text(
+                            row['created_at'].toString().split(' ')[0],
+                            style: TextStyle(
+                                fontSize: 12.5, color: Color(0xFF6A6A6A)),
+                          ),
+                        ],
                       ),
+                      //   ],
+                      // ),
                     ],
                   ),
-                  //   ],
-                  // ),
-                ],
+                ),
               ),
-              Expanded(
-                child: SizedBox(
-                    // width: 8,
-                    ),
+              SizedBox(
+                width: 8,
               ),
               Icon(
                 Icons.cloud_download,
