@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'dart:ffi';
 import 'dart:io';
+import 'package:blockchain_decentralized_storage_system/utils/bytes_calculator.dart';
 import 'package:blockchain_decentralized_storage_system/utils/constants.dart';
 import 'package:crypto/crypto.dart';
 import 'package:encrypt/encrypt.dart' as en;
@@ -165,7 +167,8 @@ class _UploadState extends State<Upload> {
           ),
           fileName(
               name: widget.fileMetaData!.name,
-              size: (widget.fileMetaData!.size / 1024).ceil()),
+              size: formatBytes(widget.fileMetaData!.size)),
+          //  (widget.fileMetaData!.size / 1024).ceil()),
           SizedBox(
             height: 25,
           ),
@@ -226,11 +229,11 @@ class _UploadState extends State<Upload> {
         // try {
         calculateMerkleRoot(databaseProvider).then((value) {
           transactionRequestToServer(serverNode, databaseProvider)
-              .then((response) {
-            uploadFile(
-                    file: widget.file!,
-                    initTransactionResponse: serverResponse!)
-                .then((progress) {
+              .then((response) async {
+            final response = await uploadFile(
+                file: widget.file!, initTransactionResponse: serverResponse!);
+            print(response);
+            if (response['ok']) {
               concludeTransactionWithServer(
                       serverNode: serverNode,
                       databaseProvider: databaseProvider)
@@ -241,7 +244,19 @@ class _UploadState extends State<Upload> {
                 Navigator.pop(this.context);
                 Alert(message: 'File uploaded').show();
               });
-            });
+            }
+            //     .then((progress) async {
+            // concludeTransactionWithServer(
+            //         serverNode: serverNode,
+            //         databaseProvider: databaseProvider)
+            //     .then((event) async {
+            //   await saveFileReferenceToDatabase(
+            //       databaseProvider: databaseProvider,
+            //       nodePingData: serverNode);
+            //   Navigator.pop(this.context);
+            //   Alert(message: 'File uploaded').show();
+            // });
+            // });
           });
         });
         // } catch (e) {
@@ -361,7 +376,9 @@ class _UploadState extends State<Upload> {
               ),
               fileName(
                   name: widget.fileMetaData!.name,
-                  size: (widget.fileMetaData!.size / 1024).ceil()),
+                  size: formatBytes(widget.fileMetaData!.size)
+                  //  (widget.fileMetaData!.size / 1024).ceil()
+                  ),
               SizedBox(
                 height: 25,
               ),
@@ -522,6 +539,7 @@ class _UploadState extends State<Upload> {
       child: Center(
         child: Text(
           text,
+          // overflow: TextOverflow.ellipsis,
           style: TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
         ),
       ),
@@ -551,25 +569,27 @@ class _UploadState extends State<Upload> {
               SizedBox(
                 width: 15,
               ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    name,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                        color: Colors.black,
-                        fontSize: 17,
-                        fontWeight: FontWeight.w600),
-                  ),
-                  SizedBox(
-                    height: 4,
-                  ),
-                  Text(
-                    '${size}kb',
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                          color: Colors.black,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w600),
+                    ),
+                    SizedBox(
+                      height: 4,
+                    ),
+                    Text(
+                      '${size}',
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -773,39 +793,52 @@ class _UploadState extends State<Upload> {
     }
   }
 
-  uploadFile(
+  Future<dynamic> uploadFile(
       {required File file,
       required InitTransactionResponse initTransactionResponse}) async {
-    try {
-      var dio = Dio();
-      FormData formData = new FormData.fromMap({
-        "file": MultipartFile.fromFile(file.path,
-            filename: widget.fileMetaData!.name)
-      });
-      await dio.post(
-        "${initTransactionResponse.httpURL}",
-        data: formData,
-        options: Options(
-          followRedirects: false,
-          validateStatus: (status) => true,
-          headers: {"Authorization": "Bearer ${initTransactionResponse.jWT}"},
-        ),
-        onSendProgress: (count, total) {
-          if (mounted)
-            setState(() {
-              progressBarValue = total / count;
-            });
-        },
-      ).then((value) async {
-        await deleteEncryptedFileFromTempDir();
-      });
-    } catch (e) {
-      setState(() {
-        isUploading = false;
-      });
-      showErrorAlert(this.context);
-      e.toString();
-    }
+    // try {
+    var dio = Dio();
+    FormData formData = new FormData.fromMap({
+      "file": await MultipartFile.fromFile(file.path,
+          filename: widget.fileMetaData!.name)
+    });
+    Response response = await dio.post(
+      "${initTransactionResponse.httpURL}",
+      data: formData,
+      options: Options(
+        followRedirects: false,
+        validateStatus: (status) => true,
+        headers: {"Authorization": "Bearer ${initTransactionResponse.jWT}"},
+      ),
+      onSendProgress: (count, total) {
+        if (mounted)
+          setState(() {
+            progressBarValue = count / total;
+          });
+      },
+    );
+
+    return jsonDecode(response.data);
+    // .then((value) async {
+    //   await deleteEncryptedFileFromTempDir();
+    // }).catchError((e) {
+    //   setState(() {
+    //     isUploading = false;
+    //   });
+    //   showErrorAlert(this.context);
+    //   e.toString();
+    // });
+    //   print(response.data);
+    //   print(response.headers);
+    //   print(response.extra);
+    //   print(response.requestOptions.headers);
+    // } catch (e) {
+    // setState(() {
+    //   isUploading = false;
+    // });
+    // showErrorAlert(this.context);
+    // e.toString();
+    // }
   }
 
   concludeTransactionWithServer(
@@ -817,6 +850,8 @@ class _UploadState extends State<Upload> {
     var credentials = await ethClient.credentialsFromPrivateKey(privateKey);
     EthereumAddress accountAddress = EthereumAddress(hexToBytes(address));
     Uint8List fileMerkleRootBytes = hexToBytes(fileMerkleRoot);
+    // Uint8 callerType = uint;
+
     final contract = await loadContract(
         name: storageNode,
         path: "assets/storage-contract-abi.json",
@@ -830,6 +865,7 @@ class _UploadState extends State<Upload> {
           function: ethFunction,
           parameters: [
             BigInt.from(1),
+            // 1,
             accountAddress,
             fileMerkleRootBytes,
             BigInt.from(widget.fileMetaData!.size),

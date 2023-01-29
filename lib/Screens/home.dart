@@ -23,6 +23,7 @@ import 'package:sha3/sha3.dart';
 import 'package:web3dart/web3dart.dart';
 import 'package:web_socket_channel/io.dart';
 import '../provider/database_provider.dart';
+import '../utils/bytes_calculator.dart';
 import '../utils/compute_merkle_tree.dart';
 import '../widgets/app_branding.dart';
 import 'package:http/http.dart' as http;
@@ -181,7 +182,8 @@ class _HomeState extends State<Home> {
                     children: [
                       Container(
                         child: Text(
-                          '${(row['file_size'] / 1024).ceil()}kb',
+                          // '${(row['file_size'] / 1024).ceil()}kb',
+                          '${formatBytes(row['file_size'])}',
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                               fontSize: 12.5, color: Color(0xFF6A6A6A)),
