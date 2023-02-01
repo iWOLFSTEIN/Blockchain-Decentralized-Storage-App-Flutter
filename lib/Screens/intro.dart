@@ -99,7 +99,6 @@ class _IntroState extends State<Intro> {
     try {
       var newPath = await getAppDirectory();
       List files = io.Directory(newPath).listSync();
-      // if (!listEquals(files, [])) {
       print(files);
       // Directory documentsDirectory = await getApplicationDocumentsDirectory();
       // String path = join(documentsDirectory.path, "database.db");

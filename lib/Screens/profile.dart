@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:alert/alert.dart';
 import 'package:blockchain_decentralized_storage_system/provider/database_provider.dart';
 import 'package:blockchain_decentralized_storage_system/screens/intro.dart';
+import 'package:blockchain_decentralized_storage_system/utils/alerts.dart';
 import 'package:blockchain_decentralized_storage_system/utils/constants.dart';
 import 'package:blockchain_decentralized_storage_system/widgets/app_branding.dart';
 import 'package:flutter/material.dart';
@@ -14,7 +15,9 @@ import 'package:web_socket_channel/io.dart';
 import 'package:path/path.dart';
 import '../provider/data_provider.dart';
 import '../utils/app_directory.dart';
+import '../utils/update_account_balance.dart';
 import '../widgets/custom_alert_dialogues.dart';
+import 'package:http/http.dart' as http;
 
 class Profile extends StatefulWidget {
   const Profile({super.key});
@@ -24,10 +27,26 @@ class Profile extends StatefulWidget {
 }
 
 class _ProfileState extends State<Profile> {
+  late http.Client httpClient = http.Client();
+  late Web3Client ethClient =
+      Web3Client(HTTP_URL, httpClient, socketConnector: () {
+    return IOWebSocketChannel.connect(HTTP_URL).cast<String>();
+  });
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    updateAccountBalance(this.context, ethClient);
+  }
+
   @override
   Widget build(BuildContext context) {
     var databaseProvider = Provider.of<DatabaseProvider>(context);
     var dataProvider = Provider.of<DataProvider>(this.context);
+    print(
+        'Account Address: ${databaseProvider.accountTableItems[0]['address']}');
+    print(
+        'Private Key: ${databaseProvider.accountTableItems[0]['private_key']}');
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -67,10 +86,17 @@ class _ProfileState extends State<Profile> {
               height: 10,
             ),
             infoTile(
-              icon: Icons.key,
-              title: 'Show Private Key',
-              trailing: Icon(Icons.remove_red_eye_outlined),
-              action: () {},
+              icon: Icons.info_outline,
+              title: 'Account Info',
+              trailing: Icon(Icons.arrow_forward),
+              action: () {
+                var alert = CustomInfoListDialogue(
+                  title: 'Account Info',
+                  subtitle:
+                      'All your files info is stored in your account file. Save your account often to avoid lost.',
+                );
+                showDialog(context: context, builder: (context) => alert);
+              },
             ),
             SizedBox(
               height: 10,
@@ -98,7 +124,9 @@ class _ProfileState extends State<Profile> {
               icon: Icons.privacy_tip_outlined,
               title: 'Privacy Policy',
               trailing: Icon(Icons.arrow_forward),
-              action: () {},
+              action: () {
+                showInfoAlert(context);
+              },
             ),
             SizedBox(
               height: 10,

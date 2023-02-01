@@ -168,6 +168,7 @@ class CustomListAlertDialogue extends StatelessWidget {
       var dividedPath = file.path.split('/');
       var name = dividedPath[dividedPath.length - 1].split('.')[0];
       var widget = ListTile(
+        contentPadding: EdgeInsets.symmetric(horizontal: 5, vertical: 0),
         onTap: () async {
           Directory documentsDirectory =
               await getApplicationDocumentsDirectory();
@@ -208,7 +209,8 @@ class CustomListAlertDialogue extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              AlertTitleSubtitle(title: title, subtitle: subtitle),
+              // AlertTitleSubtitle(title: title, subtitle: subtitle),
+              accountTitleSubtitle(),
               SizedBox(
                 height: 15,
               ),
@@ -230,10 +232,198 @@ class CustomListAlertDialogue extends StatelessWidget {
                         children: widgetList,
                       )),
                     ),
+              Align(
+                  alignment: Alignment.bottomRight,
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 5),
+                    child: GestureDetector(
+                        onTap: () {
+                          Navigator.pop(context);
+                        },
+                        child: Text(
+                          'Cancel',
+                          style: TextStyle(color: Colors.blue),
+                        )),
+                  ))
             ],
           ),
         ),
       ),
+    );
+  }
+
+  accountTitleSubtitle() {
+    return Column(
+      children: [
+        Text(
+          title!,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+              fontSize: 18,
+              color: Color(0xFF1F1F1F),
+              fontWeight: FontWeight.w600,
+              height: 1.1),
+        ),
+        const SizedBox(
+          height: 12.5,
+        ),
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          decoration: BoxDecoration(
+              color: Color(0xFFEBEFF5),
+              borderRadius: BorderRadius.all(Radius.circular(10))),
+          child: Text(
+            subtitle!,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Color(0xFF1F1F1F),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class CustomInfoListDialogue extends StatelessWidget {
+  const CustomInfoListDialogue({
+    Key? key,
+    this.title,
+    this.subtitle,
+  }) : super(key: key);
+  final String? title;
+  final String? subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFECF7FE).withOpacity(0.0),
+      body: Column(
+        children: [
+          EmptySpace(context: context),
+          alertBox(context),
+          EmptySpace(context: context),
+        ],
+      ),
+    );
+  }
+
+  Widget element(title, text) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: TextStyle(color: Colors.grey),
+        ),
+        SizedBox(
+          height: 5,
+        ),
+        SelectableText(
+          text,
+          style: TextStyle(fontSize: 14, color: Colors.black.withOpacity(0.8)),
+        ),
+      ],
+    );
+  }
+
+  Widget alertBox(context) {
+    var databaseProvider = Provider.of<DatabaseProvider>(context);
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 25),
+        child: Container(
+          height: 500,
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 25),
+          decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.all(Radius.circular(25))),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              accountTitleSubtitle(),
+              SizedBox(
+                height: 22.5,
+              ),
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      element('Name',
+                          databaseProvider.accountTableItems[0]['name']),
+                      SizedBox(
+                        height: 15,
+                      ),
+                      element('Account Address',
+                          databaseProvider.accountTableItems[0]['address']),
+                      SizedBox(
+                        height: 15,
+                      ),
+                      element('Public Key',
+                          databaseProvider.accountTableItems[0]['public_key']),
+                      SizedBox(
+                        height: 15,
+                      ),
+                      element('Private Key',
+                          '0x${databaseProvider.accountTableItems[0]['private_key']}'),
+                    ],
+                  ),
+                ),
+              ),
+              Align(
+                  alignment: Alignment.bottomRight,
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 5),
+                    child: GestureDetector(
+                        onTap: () {
+                          Navigator.pop(context);
+                        },
+                        child: Text(
+                          'Cancel',
+                          style: TextStyle(color: Colors.blue),
+                        )),
+                  ))
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  accountTitleSubtitle() {
+    return Column(
+      children: [
+        Text(
+          title!,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+              fontSize: 18,
+              color: Color(0xFF1F1F1F),
+              fontWeight: FontWeight.w600,
+              height: 1.1),
+        ),
+        const SizedBox(
+          height: 12.5,
+        ),
+        Container(
+          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          decoration: BoxDecoration(
+              color: Color(0xFFEBEFF5),
+              borderRadius: BorderRadius.all(Radius.circular(10))),
+          child: Text(
+            subtitle!,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Color(0xFF1F1F1F),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

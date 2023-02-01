@@ -7,9 +7,11 @@ import 'package:blockchain_decentralized_storage_system/services/generated/stora
 import 'package:blockchain_decentralized_storage_system/services/rpc_calls.dart';
 import 'package:blockchain_decentralized_storage_system/services/smart_contract_helper_methods.dart';
 import 'package:blockchain_decentralized_storage_system/structures/node.dart';
+import 'package:blockchain_decentralized_storage_system/utils/app_directory.dart';
 import 'package:blockchain_decentralized_storage_system/utils/constants.dart';
 import 'package:crypto/crypto.dart';
 import 'package:dart_merkle_lib/dart_merkle_lib.dart';
+import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:fixnum/fixnum.dart';
 import 'package:flutter/foundation.dart';
@@ -18,6 +20,7 @@ import 'package:flutter/services.dart';
 import 'package:grpc/grpc.dart';
 import 'package:grpc/grpc_connection_interface.dart';
 import 'package:hex/hex.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:sha3/sha3.dart';
 import 'package:web3dart/web3dart.dart';
@@ -25,8 +28,10 @@ import 'package:web_socket_channel/io.dart';
 import '../provider/database_provider.dart';
 import '../utils/bytes_calculator.dart';
 import '../utils/compute_merkle_tree.dart';
+import '../utils/update_account_balance.dart';
 import '../widgets/app_branding.dart';
 import 'package:http/http.dart' as http;
+import 'package:dio/src/response.dart' as R;
 
 class Home extends StatefulWidget {
   Home({Key? key}) : super(key: key);
@@ -42,19 +47,20 @@ class _HomeState extends State<Home> {
     return IOWebSocketChannel.connect(HTTP_URL).cast<String>();
   });
   List<Node> serversUrls = [];
+  double downloadProgress = 0.0;
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
     serversAddresses();
-    updateAccountDetails();
+    updateAccountBalance();
   }
 
-  updateAccountDetails() {
-    Future.delayed(Duration(milliseconds: 2000), () {
-      var dataProvider = Provider.of<DataProvider>(this.context, listen: false);
+  updateAccountBalance() {
+    Future.delayed(Duration(seconds: 2), () {
+      var dataProvider = Provider.of<DataProvider>(context, listen: false);
       var databaseProvider =
-          Provider.of<DatabaseProvider>(this.context, listen: false);
+          Provider.of<DatabaseProvider>(context, listen: false);
       var privateKey = databaseProvider.accountTableItems[0]['private_key'];
       dataProvider.fetchAndSyncBalance(
           ethClient: ethClient, privateKey: privateKey);
@@ -70,14 +76,6 @@ class _HomeState extends State<Home> {
 
   @override
   Widget build(BuildContext context) {
-    // if (listEquals(serversUrls, [])) {
-    //   return Container(
-    //     color: Colors.white,
-    //     child: Center(
-    //       child: CircularProgressIndicator(),
-    //     ),
-    //   );
-    // }
     DatabaseProvider databaseProvider = Provider.of<DatabaseProvider>(context);
     return Scaffold(
       backgroundColor: Colors.white,
@@ -105,15 +103,25 @@ class _HomeState extends State<Home> {
                       fontWeight: FontWeight.w500),
                 ),
               ),
-              Expanded(
-                  child: ListView(
-                padding: EdgeInsets.symmetric(vertical: 0, horizontal: 0),
-                children: [
-                  for (Map<String, dynamic> row
-                      in databaseProvider.filesTableItems)
-                    uploadedFileTile(row: row)
-                ],
-              ))
+              listEquals(databaseProvider.filesTableItems, [])
+                  ? Expanded(
+                      child: Container(
+                        child: Center(
+                            child: Text(
+                          'No files available',
+                          style: TextStyle(color: Colors.grey),
+                        )),
+                      ),
+                    )
+                  : Expanded(
+                      child: ListView(
+                      padding: EdgeInsets.symmetric(vertical: 0, horizontal: 0),
+                      children: [
+                        for (Map<String, dynamic> row
+                            in databaseProvider.filesTableItems)
+                          uploadedFileTile(row: row)
+                      ],
+                    ))
             ],
           ),
         ),
@@ -186,7 +194,6 @@ class _HomeState extends State<Home> {
                         children: [
                           Container(
                             child: Text(
-                              // '${(row['file_size'] / 1024).ceil()}kb',
                               '${formatBytes(row['file_size'])}',
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
@@ -203,8 +210,6 @@ class _HomeState extends State<Home> {
                           ),
                         ],
                       ),
-                      //   ],
-                      // ),
                     ],
                   ),
                 ),
@@ -212,10 +217,21 @@ class _HomeState extends State<Home> {
               SizedBox(
                 width: 8,
               ),
-              Icon(
-                Icons.cloud_download,
-                color: Color(0xFF4859A0),
-                size: 25,
+              GestureDetector(
+                onTap: () async {
+                  try {
+                    final response =
+                        await downloadFile(row['download_url'], row['name']);
+                    print(response);
+                  } catch (e) {
+                    print(e.toString());
+                  }
+                },
+                child: Icon(
+                  Icons.cloud_download,
+                  color: Color(0xFF4859A0),
+                  size: 25,
+                ),
               )
             ],
           ),
@@ -243,5 +259,21 @@ class _HomeState extends State<Home> {
                     )));
       }
     } else {}
+  }
+
+  Future<dynamic> downloadFile(String url, String name) async {
+    String? path = await getDownloadPath();
+    String savePath = '$path/$name';
+    Dio dio = Dio();
+    R.Response response = await dio.download(
+      url,
+      savePath,
+      onReceiveProgress: (received, total) {
+        setState(() {
+          downloadProgress = received / total;
+        });
+      },
+    );
+    return jsonDecode(response.data);
   }
 }

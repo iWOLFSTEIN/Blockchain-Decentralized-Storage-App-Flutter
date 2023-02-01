@@ -12,3 +12,15 @@ showErrorAlert(context) {
   );
   showDialog(context: context, builder: (context) => alert);
 }
+
+showInfoAlert(context) {
+  var alert = CustomGeneralAlertDialogue(
+    title: 'Info Alert!',
+    subtitle: 'Privacy policy for Hyperspace is currently under development.',
+    action: () {
+      Navigator.pop(context);
+    },
+    actionTitle: 'Okay',
+  );
+  showDialog(context: context, builder: (context) => alert);
+}

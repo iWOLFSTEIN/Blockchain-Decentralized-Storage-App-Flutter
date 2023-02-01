@@ -66,6 +66,8 @@ class DatabaseHelper with ChangeNotifier {
       sha256 VARCHAR(256),
       is_encrypted int(1),
 
+      download_url VARCHAR(512),
+
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
 ''');

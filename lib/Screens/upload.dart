@@ -3,6 +3,7 @@ import 'dart:ffi';
 import 'dart:io';
 import 'package:blockchain_decentralized_storage_system/utils/bytes_calculator.dart';
 import 'package:blockchain_decentralized_storage_system/utils/constants.dart';
+import 'package:blockchain_decentralized_storage_system/utils/update_account_balance.dart';
 import 'package:crypto/crypto.dart';
 import 'package:encrypt/encrypt.dart' as en;
 import 'package:alert/alert.dart';
@@ -72,8 +73,7 @@ class _UploadState extends State<Upload> {
   @override
   Widget build(BuildContext context) {
     final databaseProvider = Provider.of<DatabaseProvider>(context);
-    print(
-        'Account Address: ${databaseProvider.accountTableItems[0]['address']}');
+
     return Scaffold(
       backgroundColor: Colors.white,
       resizeToAvoidBottomInset: false,
@@ -120,12 +120,21 @@ class _UploadState extends State<Upload> {
                   ),
                 if (serverResponse == null && fileMerkleRoot != '')
                   const Text(
-                    'Connecting Server...',
+                    'Connecting to Server...',
                     style: TextStyle(fontSize: 18.5, color: Color(0xFF494949)),
                   ),
-                if (serverResponse != null && fileMerkleRoot != '')
+                if (serverResponse != null &&
+                    fileMerkleRoot != '' &&
+                    progressBarValue < 1)
                   const Text(
                     'Uploading...',
+                    style: TextStyle(fontSize: 18.5, color: Color(0xFF494949)),
+                  ),
+                if (serverResponse != null &&
+                    fileMerkleRoot != '' &&
+                    progressBarValue == 1)
+                  const Text(
+                    'Verifying...',
                     style: TextStyle(fontSize: 18.5, color: Color(0xFF494949)),
                   ),
                 const SizedBox(
@@ -135,11 +144,27 @@ class _UploadState extends State<Upload> {
                   width: 120,
                   child: ClipRRect(
                     borderRadius: const BorderRadius.all(Radius.circular(25)),
-                    child: LinearProgressIndicator(
-                      value: progressBarValue,
-                      minHeight: 4,
-                      backgroundColor: const Color(0xFF4859A0).withOpacity(0.4),
-                      color: Color(0xFF4859A0),
+                    child: TweenAnimationBuilder(
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeInOut,
+                      tween: Tween<double>(
+                        begin: 0,
+                        end: progressBarValue,
+                      ),
+                      builder: (context, double value, _) =>
+                          LinearProgressIndicator(
+                        value: value,
+                        minHeight: 4,
+                        backgroundColor:
+                            const Color(0xFF4859A0).withOpacity(0.4),
+                        color: Color(0xFF4859A0),
+                      ),
+                      // child: LinearProgressIndicator(
+                      //   value: progressBarValue,
+                      //   minHeight: 4,
+                      //   backgroundColor: const Color(0xFF4859A0).withOpacity(0.4),
+                      //   color: Color(0xFF4859A0),
+                      // ),
                     ),
                   ),
                 )
@@ -168,7 +193,6 @@ class _UploadState extends State<Upload> {
           fileName(
               name: widget.fileMetaData!.name,
               size: formatBytes(widget.fileMetaData!.size)),
-          //  (widget.fileMetaData!.size / 1024).ceil()),
           SizedBox(
             height: 25,
           ),
@@ -228,28 +252,33 @@ class _UploadState extends State<Upload> {
         });
         try {
           String merkleRoot = await calculateMerkleRoot(databaseProvider);
-          print('merkle');
-          print(merkleRoot);
           InitTransactionResponse transactionResponse =
               await transactionRequestToServer(serverNode, databaseProvider);
           dynamic uploadResponse = await uploadFile(
               file: widget.file!, initTransactionResponse: transactionResponse);
           if (uploadResponse['ok']) {
             Future.delayed(Duration(seconds: 2), () async {
-              String concludeTransactionResponse =
-                  await concludeTransactionWithServer(
+              await concludeTransactionWithServer(
                       serverNode: serverNode,
-                      databaseProvider: databaseProvider);
-              await saveFileReferenceToDatabase(
-                  databaseProvider: databaseProvider, nodePingData: serverNode);
+                      databaseProvider: databaseProvider)
+                  .then((value) async {
+                await saveFileReferenceToDatabase(
+                        databaseProvider: databaseProvider,
+                        nodePingData: serverNode,
+                        downloadUrl: uploadResponse['download_url'])
+                    .then((value) {
+                  exitToHomeScreenWithAnAlert();
+                  updateAccountBalance(this.context, ethClient);
+                }).onError((error, stackTrace) {
+                  handleError(this.context, error);
+                });
+              }).onError((error, stackTrace) {
+                handleError(this.context, error);
+              });
             });
           }
         } catch (e) {
-          setState(() {
-            isUploading = false;
-          });
-          showErrorAlert(this.context);
-          print(e.toString());
+          handleError(this.context, e);
         }
       },
       child: Row(
@@ -361,9 +390,7 @@ class _UploadState extends State<Upload> {
               ),
               fileName(
                   name: widget.fileMetaData!.name,
-                  size: formatBytes(widget.fileMetaData!.size)
-                  //  (widget.fileMetaData!.size / 1024).ceil()
-                  ),
+                  size: formatBytes(widget.fileMetaData!.size)),
               SizedBox(
                 height: 25,
               ),
@@ -583,6 +610,14 @@ class _UploadState extends State<Upload> {
     );
   }
 
+  handleError(context, e) {
+    setState(() {
+      isUploading = false;
+    });
+    showErrorAlert(context);
+    print(e.toString());
+  }
+
   datePicker() async {
     DateTime? picked = await showDatePicker(
       context: this.context,
@@ -764,7 +799,6 @@ class _UploadState extends State<Upload> {
   Future<dynamic> uploadFile(
       {required File file,
       required InitTransactionResponse initTransactionResponse}) async {
-    // try {
     var dio = Dio();
     FormData formData = new FormData.fromMap({
       "file": await MultipartFile.fromFile(file.path,
@@ -829,7 +863,8 @@ class _UploadState extends State<Upload> {
 
   Future<void> saveFileReferenceToDatabase(
       {required DatabaseProvider databaseProvider,
-      required NodePingData nodePingData}) async {
+      required NodePingData nodePingData,
+      required String downloadUrl}) async {
     final secondsSinceEpoch = DateTime.now().millisecondsSinceEpoch ~/ 1000;
     Map<String, dynamic> row = {
       'file_key': getfileHash(databaseProvider: databaseProvider),
@@ -847,10 +882,10 @@ class _UploadState extends State<Upload> {
       'prove_timeout': 216000,
       'sha256': '',
       'is_encrypted': isEncrypted,
+      'download_url': downloadUrl,
     };
     databaseProvider.addFilesTableRow(row);
     await deleteEncryptedFileFromTempDir();
-    exitToHomeScreenWithAnAlert();
   }
 
   exitToHomeScreenWithAnAlert() {
