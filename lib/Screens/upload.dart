@@ -159,12 +159,6 @@ class _UploadState extends State<Upload> {
                             const Color(0xFF4859A0).withOpacity(0.4),
                         color: Color(0xFF4859A0),
                       ),
-                      // child: LinearProgressIndicator(
-                      //   value: progressBarValue,
-                      //   minHeight: 4,
-                      //   backgroundColor: const Color(0xFF4859A0).withOpacity(0.4),
-                      //   color: Color(0xFF4859A0),
-                      // ),
                     ),
                   ),
                 )

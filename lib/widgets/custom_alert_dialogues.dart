@@ -209,21 +209,21 @@ class CustomListAlertDialogue extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // AlertTitleSubtitle(title: title, subtitle: subtitle),
               accountTitleSubtitle(),
               SizedBox(
                 height: 15,
               ),
               (listEquals(widgetList, []))
-                  ? Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'No account found',
-                          style:
-                              TextStyle(color: Colors.black.withOpacity(0.4)),
+                  ? Expanded(
+                      child: Container(
+                        child: Center(
+                          child: Text(
+                            'No accounts found',
+                            style:
+                                TextStyle(color: Colors.black.withOpacity(0.4)),
+                          ),
                         ),
-                      ],
+                      ),
                     )
                   : Expanded(
                       child: SingleChildScrollView(

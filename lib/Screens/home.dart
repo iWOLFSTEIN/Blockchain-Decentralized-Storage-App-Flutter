@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:alert/alert.dart';
 import 'package:blockchain_decentralized_storage_system/provider/data_provider.dart';
 import 'package:blockchain_decentralized_storage_system/screens/upload.dart';
 import 'package:blockchain_decentralized_storage_system/services/generated/storage-node.pbgrpc.dart';
@@ -12,6 +13,7 @@ import 'package:blockchain_decentralized_storage_system/utils/constants.dart';
 import 'package:crypto/crypto.dart';
 import 'package:dart_merkle_lib/dart_merkle_lib.dart';
 import 'package:dio/dio.dart';
+// import 'package:encrypt/encrypt.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:fixnum/fixnum.dart';
 import 'package:flutter/foundation.dart';
@@ -21,6 +23,7 @@ import 'package:grpc/grpc.dart';
 import 'package:grpc/grpc_connection_interface.dart';
 import 'package:hex/hex.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:percent_indicator/circular_percent_indicator.dart';
 import 'package:provider/provider.dart';
 import 'package:sha3/sha3.dart';
 import 'package:web3dart/web3dart.dart';
@@ -32,6 +35,7 @@ import '../utils/update_account_balance.dart';
 import '../widgets/app_branding.dart';
 import 'package:http/http.dart' as http;
 import 'package:dio/src/response.dart' as R;
+import 'package:encrypt/encrypt.dart' as en;
 
 class Home extends StatefulWidget {
   Home({Key? key}) : super(key: key);
@@ -48,6 +52,7 @@ class _HomeState extends State<Home> {
   });
   List<Node> serversUrls = [];
   double downloadProgress = 0.0;
+
   @override
   void initState() {
     // TODO: implement initState
@@ -82,25 +87,32 @@ class _HomeState extends State<Home> {
       body: SafeArea(
         child: Container(
           width: double.infinity,
-          padding: EdgeInsets.symmetric(horizontal: 20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SizedBox(
-                height: 25,
-              ),
-              AppBranding(profileIconVisibility: 1.0),
-              SizedBox(
-                height: 20,
-              ),
               Padding(
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                child: Text(
-                  'Uploaded',
-                  style: TextStyle(
-                      color: Color(0xFFABACAF),
-                      fontSize: 19,
-                      fontWeight: FontWeight.w500),
+                padding: EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(
+                      height: 25,
+                    ),
+                    AppBranding(profileIconVisibility: 1.0),
+                    SizedBox(
+                      height: 20,
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      child: Text(
+                        'Uploaded',
+                        style: TextStyle(
+                            color: Color(0xFFABACAF),
+                            fontSize: 19,
+                            fontWeight: FontWeight.w500),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               listEquals(databaseProvider.filesTableItems, [])
@@ -115,11 +127,13 @@ class _HomeState extends State<Home> {
                     )
                   : Expanded(
                       child: ListView(
-                      padding: EdgeInsets.symmetric(vertical: 0, horizontal: 0),
+                      padding: EdgeInsets.only(
+                          top: 0, left: 0, right: 0, bottom: 70),
                       children: [
                         for (Map<String, dynamic> row
                             in databaseProvider.filesTableItems)
-                          uploadedFileTile(row: row)
+                          // uploadedFileTile(row: row)
+                          UploadedFileTile(row: row)
                       ],
                     ))
             ],
@@ -135,106 +149,6 @@ class _HomeState extends State<Home> {
           Icons.cloud_upload,
           color: Colors.white,
           size: 25,
-        ),
-      ),
-    );
-  }
-
-  Padding uploadedFileTile({required Map<String, dynamic> row}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        vertical: 7.5,
-      ),
-      child: Material(
-        elevation: 0,
-        borderRadius: BorderRadius.all(Radius.circular(15)),
-        child: Container(
-          height: 80,
-          width: double.infinity,
-          padding: EdgeInsets.symmetric(horizontal: 15),
-          child: Row(
-            children: [
-              Opacity(
-                opacity: 0.5,
-                child: Image.asset(
-                  (row['is_encrypted'] == 1)
-                      ? 'images/encrypted_file.png'
-                      : 'images/file.png',
-                  height: 25,
-                  width: 25,
-                ),
-              ),
-              const SizedBox(
-                width: 15,
-              ),
-              Expanded(
-                child: Container(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Container(
-                              child: Text(
-                                row['name'],
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                    color: Color(0xFF494949), fontSize: 17),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(
-                        height: 10,
-                      ),
-                      Row(
-                        children: [
-                          Container(
-                            child: Text(
-                              '${formatBytes(row['file_size'])}',
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                  fontSize: 12.5, color: Color(0xFF6A6A6A)),
-                            ),
-                          ),
-                          SizedBox(
-                            width: 15,
-                          ),
-                          Text(
-                            row['created_at'].toString().split(' ')[0],
-                            style: TextStyle(
-                                fontSize: 12.5, color: Color(0xFF6A6A6A)),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              SizedBox(
-                width: 8,
-              ),
-              GestureDetector(
-                onTap: () async {
-                  try {
-                    final response =
-                        await downloadFile(row['download_url'], row['name']);
-                    print(response);
-                  } catch (e) {
-                    print(e.toString());
-                  }
-                },
-                child: Icon(
-                  Icons.cloud_download,
-                  color: Color(0xFF4859A0),
-                  size: 25,
-                ),
-              )
-            ],
-          ),
         ),
       ),
     );
@@ -260,10 +174,192 @@ class _HomeState extends State<Home> {
       }
     } else {}
   }
+}
 
-  Future<dynamic> downloadFile(String url, String name) async {
-    String? path = await getDownloadPath();
-    String savePath = '$path/$name';
+class UploadedFileTile extends StatefulWidget {
+  const UploadedFileTile({super.key, required this.row});
+  final Map<String, dynamic> row;
+  @override
+  State<UploadedFileTile> createState() => _UploadedFileTileState();
+}
+
+class _UploadedFileTileState extends State<UploadedFileTile> {
+  double downloadProgress = 0.0;
+  bool isDownlaoding = false;
+  bool isDecrypting = false;
+  @override
+  Widget build(BuildContext context) {
+    DatabaseProvider databaseProvider = Provider.of<DatabaseProvider>(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        vertical: 7.5,
+        horizontal: 20,
+      ),
+      child: Material(
+        elevation: 0,
+        borderRadius: BorderRadius.all(Radius.circular(15)),
+        child: Container(
+          height: 80,
+          width: double.infinity,
+          padding: EdgeInsets.symmetric(horizontal: 15),
+          child: Row(
+            children: [
+              Opacity(
+                opacity: 0.6,
+                child: Image.asset(
+                  (widget.row['is_encrypted'] == 1)
+                      ? 'images/encrypted_file.png'
+                      : 'images/file.png',
+                  height: 25,
+                  width: 25,
+                ),
+              ),
+              const SizedBox(
+                width: 15,
+              ),
+              Expanded(
+                child: Container(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Container(
+                              child: Text(
+                                widget.row['name'],
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                    color: Color(0xFF494949), fontSize: 17),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(
+                        height: 10,
+                      ),
+                      Row(
+                        children: [
+                          Container(
+                            child: Text(
+                              '${formatBytes(widget.row['file_size'])}',
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                  fontSize: 12.5, color: Color(0xFF6A6A6A)),
+                            ),
+                          ),
+                          SizedBox(
+                            width: 15,
+                          ),
+                          Text(
+                            widget.row['created_at'].toString().split(' ')[0],
+                            style: TextStyle(
+                                fontSize: 12.5, color: Color(0xFF6A6A6A)),
+                          ),
+                          SizedBox(
+                            width: 15,
+                          ),
+                          Text(
+                            isDecrypting ? 'decrypting...' : '',
+                            style: TextStyle(
+                                fontSize: 12.5, color: Color(0xFF6A6A6A)),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: 8,
+              ),
+              if (isDownlaoding)
+                CircularPercentIndicator(
+                  radius: 16,
+                  lineWidth: 2,
+                  percent: downloadProgress,
+                  animateFromLastPercent: true,
+                  animation: true,
+                  center: Text(
+                    '${(downloadProgress * 100).toStringAsFixed(0)}%',
+                    style: TextStyle(color: Color(0xFF4859A0), fontSize: 9),
+                  ),
+                  backgroundColor: Colors.grey.withOpacity(0.2),
+                  progressColor: Color(0xFF4859A0),
+                ),
+              if (!isDownlaoding)
+                GestureDetector(
+                  onTap: isDecrypting
+                      ? null
+                      : () async {
+                          await download(databaseProvider);
+                        },
+                  child: Container(
+                    height: 32,
+                    width: 32,
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                          color: Colors.grey.withOpacity(0.2), width: 2),
+                      borderRadius: BorderRadius.circular(100),
+                    ),
+                    child: Center(
+                      child: Icon(
+                        Icons.file_download_outlined,
+                        color: isDecrypting
+                            ? Colors.grey.withOpacity(0.2)
+                            : Color(0xFF4859A0),
+                        size: 17.5,
+                      ),
+                    ),
+                  ),
+                )
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  download(DatabaseProvider databaseProvider) async {
+    try {
+      setState(() {
+        isDownlaoding = true;
+      });
+      String? path = await getDownloadPath();
+      String savePath = '$path/${widget.row['name']}';
+      await downloadFile(url: widget.row['download_url'], savePath: savePath);
+      if (widget.row['is_encrypted'] == 1) {
+        setState(() {
+          isDownlaoding = false;
+          downloadProgress = 0.0;
+          isDecrypting = true;
+        });
+        await decryptFile(
+            databaseProvider: databaseProvider, filePath: savePath);
+        setState(() {
+          isDecrypting = false;
+        });
+      } else {
+        setState(() {
+          isDownlaoding = false;
+          downloadProgress = 0.0;
+        });
+      }
+      Alert(message: 'Saved in downloads').show();
+    } catch (e) {
+      setState(() {
+        isDownlaoding = false;
+        downloadProgress = 0.0;
+        isDecrypting = false;
+      });
+      print(e.toString());
+    }
+  }
+
+  Future<dynamic> downloadFile(
+      {required String url, required String savePath}) async {
     Dio dio = Dio();
     R.Response response = await dio.download(
       url,
@@ -274,6 +370,24 @@ class _HomeState extends State<Home> {
         });
       },
     );
-    return jsonDecode(response.data);
+    return response.data;
+  }
+
+  Future<void> decryptFile(
+      {required DatabaseProvider databaseProvider,
+      required String filePath}) async {
+    File file = File(filePath);
+    Uint8List fileBytes = await file.readAsBytes();
+    String privateKey = databaseProvider.accountTableItems[0]['address'];
+    var bytes = utf8.encode(privateKey);
+    var digest = sha256.convert(bytes);
+
+    final key = en.Key.fromUtf8(digest.toString().substring(0, 32));
+    final iv = en.IV.fromUtf8(iv_key);
+    final encrypter = en.Encrypter(en.AES(key, mode: en.AESMode.cbc));
+    fileBytes = Uint8List.fromList(
+        encrypter.decryptBytes(en.Encrypted(fileBytes), iv: iv));
+
+    await file.writeAsBytes(fileBytes);
   }
 }

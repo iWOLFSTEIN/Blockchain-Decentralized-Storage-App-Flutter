@@ -54,6 +54,7 @@ dependencies:
   progress_indicators: ^1.0.0
   crypto: ^3.0.2
   encrypt: ^5.0.1
+  percent_indicator: ^4.2.2
 
 
 dev_dependencies:
