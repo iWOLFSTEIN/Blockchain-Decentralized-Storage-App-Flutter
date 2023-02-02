@@ -33,7 +33,6 @@ List<Uint8List> chunksSha3Encoding(Uint8List fileBytes) {
 }
 
 List<Uint8List> fileBytesChunking(Uint8List fileBytes) {
-  // Uint8List fileBytes = await file.readAsBytes();
   List<Uint8List> chunks = [];
   int chunkSize = 1024;
   for (var i = 0; i < fileBytes.length; i += chunkSize) {

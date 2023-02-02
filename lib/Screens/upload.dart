@@ -773,7 +773,7 @@ class _UploadState extends State<Upload> {
 
     // print('private key: $privateKey');
     // print('sha256 encryption: ${digest.toString()}');
-    // print('key for encryption: ${digest.toString().substring(0, 32)}');
+    print('key for encryption: ${digest.toString().substring(0, 32)}');
 
     final key = en.Key.fromUtf8(digest.toString().substring(0, 32));
     final iv = IV.fromUtf8(iv_key);

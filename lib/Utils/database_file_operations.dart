@@ -17,10 +17,16 @@ saveDatabase(String databaseFileName) async {
 
 deleteDatabase(String databaseFileName) async {
   try {
-    var path = await getAppDirectory() + "/$databaseFileName.db";
+    // var path = await getAppDirectory() + "/$databaseFileName.db";
+    var path = await getDatabaseFilePath(databaseFileName);
     File databaseFile = File(path);
     await databaseFile.delete();
   } catch (e) {
     print(e.toString());
   }
+}
+
+getDatabaseFilePath(String databaseFileName) async {
+  var path = await getAppDirectory() + "/$databaseFileName.db";
+  return path;
 }

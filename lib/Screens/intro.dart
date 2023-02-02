@@ -101,25 +101,13 @@ class _IntroState extends State<Intro> {
       var newPath = await getAppDirectory();
       List files = io.Directory(newPath).listSync();
       print(files);
-      // Directory documentsDirectory = await getApplicationDocumentsDirectory();
-      // String path = join(documentsDirectory.path, "database.db");
-      // files[0].copy(path).then((value) {
-      //   databaseProvider.fetchAndSetData();
-      //   Navigator.pushAndRemoveUntil(
-      //       context,
-      //       MaterialPageRoute(builder: (context) => Home()),
-      //       (route) => false);
-      // });
 
       var listAlert = CustomListAlertDialogue(
         title: 'Hyperspace Accounts',
         subtitle: 'Select an account below to continue',
-        // action: () {},
-        // actionTitle: 'None',
         files: files,
       );
       showDialog(context: context, builder: (context) => listAlert);
-      // }
     } catch (e) {
       print(e.toString());
     }
@@ -138,7 +126,7 @@ class _IntroState extends State<Intro> {
           button(context, action: () {
             if (privateKeyController.text != '') {
               pageController.animateToPage(1,
-                  duration: Duration(milliseconds: 500),
+                  duration: Duration(milliseconds: 300),
                   curve: Curves.fastOutSlowIn);
             }
           })
@@ -251,8 +239,7 @@ class _IntroState extends State<Intro> {
                 break;
               }
             }
-            print(privateKey);
-            print(privateKey.length);
+
             setState(() {
               privateKeyController.text = privateKey;
             });

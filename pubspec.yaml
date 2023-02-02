@@ -37,7 +37,6 @@ dependencies:
   path_provider: ^2.0.11
   protobuf: ^2.0.1
   grpc: ^3.0.2
-  get_ip_address: ^0.0.5
   file_picker: ^4.6.1
   dio: ^4.0.6
   web3dart:
@@ -55,6 +54,7 @@ dependencies:
   crypto: ^3.0.2
   encrypt: ^5.0.1
   percent_indicator: ^4.2.2
+  share_plus:
 
 
 dev_dependencies:

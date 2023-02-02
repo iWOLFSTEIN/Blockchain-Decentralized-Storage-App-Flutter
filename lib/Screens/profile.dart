@@ -9,6 +9,7 @@ import 'package:blockchain_decentralized_storage_system/widgets/app_branding.dar
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:web3dart/web3dart.dart';
 import 'package:http/http.dart';
 import 'package:web_socket_channel/io.dart';
@@ -64,7 +65,66 @@ class _ProfileState extends State<Profile> {
             ),
             userInformation(context, databaseProvider),
             SizedBox(
-              height: 40,
+              height: 25,
+            ),
+            Container(
+              width: double.infinity,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      height: 47.5,
+                      decoration: BoxDecoration(
+                          color: Colors.red.withOpacity(0.1),
+                          borderRadius: BorderRadius.all(Radius.circular(10))),
+                      child: TextButton(
+                        onPressed: () async {
+                          await removeAccountAlert(this.context, () async {
+                            try {
+                              String databaseFileName =
+                                  databaseProvider.accountTableItems[0]['name'];
+                              await deleteDatabase(databaseFileName);
+                              await deleteDatabaseAndLogout(
+                                  context, databaseProvider);
+                            } catch (e) {
+                              print(e.toString());
+                            }
+                          });
+                        },
+                        child: Text(
+                          'Remove Account',
+                          style: TextStyle(color: Colors.red),
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(
+                    width: 10,
+                  ),
+                  Expanded(
+                    child: Container(
+                      height: 47.5,
+                      decoration: BoxDecoration(
+                          color: Color(0xFF4859A0).withOpacity(0.1),
+                          borderRadius: BorderRadius.all(Radius.circular(10))),
+                      child: TextButton(
+                        onPressed: () async {
+                          await exportAccount(databaseProvider);
+                        },
+                        child: Text(
+                          'Export Account',
+                          style: TextStyle(
+                            color: Color(0xFF4859A0),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(
+              height: 15,
             ),
             infoTile(
               icon: Icons.balance,
@@ -103,27 +163,6 @@ class _ProfileState extends State<Profile> {
               height: 10,
             ),
             infoTile(
-              icon: Icons.save_alt,
-              title: 'Save Account',
-              trailing: Icon(Icons.arrow_forward),
-              action: () {
-                saveAccountAlert(context, databaseProvider,
-                    primaryAction: () async {
-                  String databaseFileName =
-                      databaseProvider.accountTableItems[0]['name'];
-                  await saveDatabase(databaseFileName).then((value) {
-                    Alert(message: 'Account saved').show();
-                  });
-                  Navigator.pop(context);
-                }, secondaryAction: () {
-                  Navigator.pop(context);
-                });
-              },
-            ),
-            SizedBox(
-              height: 10,
-            ),
-            infoTile(
               icon: Icons.privacy_tip_outlined,
               title: 'Privacy Policy',
               trailing: Icon(Icons.arrow_forward),
@@ -140,17 +179,9 @@ class _ProfileState extends State<Profile> {
               trailing: Icon(Icons.logout),
               action: () async {
                 try {
-                  await saveAccountAlert(context, databaseProvider,
-                      primaryAction: () async {
-                    String databaseFileName =
-                        databaseProvider.accountTableItems[0]['name'];
-                    await saveDatabase(databaseFileName).then((value) {
-                      Alert(message: 'Account saved').show();
-                    });
+                  await logoutAlert(context, primaryAction: () async {
                     await deleteDatabaseAndLogout(context, databaseProvider);
-                  }, secondaryAction: () async {
-                    await deleteDatabaseAndLogout(context, databaseProvider);
-                  }, secondaryActionTitle: 'Not Now');
+                  });
                 } catch (e) {
                   print(e.toString());
                 }
@@ -169,18 +200,44 @@ class _ProfileState extends State<Profile> {
     databaseProvider.deleteFilesTableData();
   }
 
-  saveAccountAlert(context, databaseProvider,
-      {primaryAction, secondaryAction, secondaryActionTitle = 'Go Back'}) {
+  logoutAlert(context, {primaryAction}) {
     var alert = CustomModifiedAlertDialogue(
-      title: 'Save Hyperspace Account',
+      title: 'Are you sure you want to logout?',
       subtitle:
-          'Save your account for later use. If you dont save your account all the data will be lost.',
+          'You can switch to this account anytime you want. All your changes are saved.',
       action: primaryAction,
-      actionTitle: 'Save Account',
-      secondaryAction: secondaryAction,
-      secondaryActionTitle: secondaryActionTitle,
+      actionTitle: 'Logout',
+      secondaryAction: () {
+        Navigator.pop(context);
+      },
+      secondaryActionTitle: 'Go Back',
     );
     showDialog(context: context, builder: (context) => alert);
+  }
+
+  removeAccountAlert(context, primaryAction) async {
+    var alert = CustomModifiedAlertDialogue(
+      title: 'Remove Hyperspace Account',
+      subtitle:
+          'Removing this account will result in deletion of all the data stored.',
+      action: primaryAction,
+      actionTitle: 'Remove Account',
+      secondaryAction: () {
+        Navigator.pop(context);
+      },
+      secondaryActionTitle: 'Go Back',
+    );
+    showDialog(context: context, builder: (context) => alert);
+  }
+
+  exportAccount(DatabaseProvider databaseProvider) async {
+    try {
+      String databaseFileName = databaseProvider.accountTableItems[0]['name'];
+      String databaseFilePath = await getDatabaseFilePath(databaseFileName);
+      Share.shareFiles(['$databaseFilePath'], text: 'Hyperspace database file');
+    } catch (e) {
+      print(e.toString());
+    }
   }
 
   Widget infoTile(
@@ -257,14 +314,6 @@ class _ProfileState extends State<Profile> {
           ),
         ),
         Expanded(child: SizedBox()),
-        // Icon(
-        //   Icons.delete,
-        //   color: Color(0xFF6A6A6A),
-        // ),
-        // Text(
-        //   'Remove',
-        //   style: TextStyle(color: Colors.red),
-        // )
       ],
     );
   }
