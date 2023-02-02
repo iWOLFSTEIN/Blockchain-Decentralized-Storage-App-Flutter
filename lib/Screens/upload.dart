@@ -757,9 +757,6 @@ class _UploadState extends State<Upload> {
       fileMerkleRoot = merkleRoot;
       fileSha256Hash = sha256Hash;
     });
-    // print('File(encrypted) Sha256 hash: $fileSha256Hash');
-    // print(
-    //     'Private Key: ${databaseProvider.accountTableItems[0]['private_key']}');
 
     return fileMerkleRoot;
   }
@@ -767,13 +764,10 @@ class _UploadState extends State<Upload> {
   Future<Uint8List> encryptFile(
       {required DatabaseProvider databaseProvider,
       required Uint8List fileBytes}) async {
-    String privateKey = databaseProvider.accountTableItems[0]['address'];
+    String privateKey = databaseProvider.accountTableItems[0]['private_key'];
     var bytes = utf8.encode(privateKey);
-    var digest = sha256.convert(bytes);
 
-    // print('private key: $privateKey');
-    // print('sha256 encryption: ${digest.toString()}');
-    print('key for encryption: ${digest.toString().substring(0, 32)}');
+    var digest = sha256.convert(bytes);
 
     final key = en.Key.fromUtf8(digest.toString().substring(0, 32));
     final iv = IV.fromUtf8(iv_key);

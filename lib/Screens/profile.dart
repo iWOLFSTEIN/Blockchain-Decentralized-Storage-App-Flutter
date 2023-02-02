@@ -49,6 +49,8 @@ class _ProfileState extends State<Profile> {
         'Account Address: ${databaseProvider.accountTableItems[0]['address']}');
     print(
         'Private Key: ${databaseProvider.accountTableItems[0]['private_key']}');
+
+    print('Public Key: ${databaseProvider.accountTableItems[0]['public_key']}');
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -86,6 +88,7 @@ class _ProfileState extends State<Profile> {
                               await deleteDatabase(databaseFileName);
                               await deleteDatabaseAndLogout(
                                   context, databaseProvider);
+                              Alert(message: 'Account removed').show();
                             } catch (e) {
                               print(e.toString());
                             }

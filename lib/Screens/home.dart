@@ -293,8 +293,8 @@ class _HomeState extends State<Home> {
               width: 65,
               decoration: BoxDecoration(
                 color: Color(0xFFFAFAFA),
-                border:
-                    Border.all(width: 2, color: Colors.black.withOpacity(0.05)),
+                border: Border.all(
+                    width: 1.5, color: Colors.black.withOpacity(0.05)),
                 borderRadius: BorderRadius.circular(100),
               ),
               child: Center(child: icon),
@@ -566,7 +566,7 @@ class _UploadedFileTileState extends State<UploadedFileTile> {
       {required DatabaseProvider databaseProvider,
       required File file,
       required Uint8List fileBytes}) async {
-    String privateKey = databaseProvider.accountTableItems[0]['address'];
+    String privateKey = databaseProvider.accountTableItems[0]['private_key'];
     var bytes = utf8.encode(privateKey);
     var digest = sha256.convert(bytes);
 
