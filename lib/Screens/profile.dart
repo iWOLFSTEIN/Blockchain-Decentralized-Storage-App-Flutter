@@ -15,6 +15,7 @@ import 'package:web_socket_channel/io.dart';
 import 'package:path/path.dart';
 import '../provider/data_provider.dart';
 import '../utils/app_directory.dart';
+import '../utils/database_file_operations.dart';
 import '../utils/update_account_balance.dart';
 import '../widgets/custom_alert_dialogues.dart';
 import 'package:http/http.dart' as http;
@@ -108,7 +109,9 @@ class _ProfileState extends State<Profile> {
               action: () {
                 saveAccountAlert(context, databaseProvider,
                     primaryAction: () async {
-                  await saveDatabase(databaseProvider).then((value) {
+                  String databaseFileName =
+                      databaseProvider.accountTableItems[0]['name'];
+                  await saveDatabase(databaseFileName).then((value) {
                     Alert(message: 'Account saved').show();
                   });
                   Navigator.pop(context);
@@ -124,7 +127,7 @@ class _ProfileState extends State<Profile> {
               icon: Icons.privacy_tip_outlined,
               title: 'Privacy Policy',
               trailing: Icon(Icons.arrow_forward),
-              action: () {
+              action: () async {
                 showInfoAlert(context);
               },
             ),
@@ -139,7 +142,9 @@ class _ProfileState extends State<Profile> {
                 try {
                   await saveAccountAlert(context, databaseProvider,
                       primaryAction: () async {
-                    await saveDatabase(databaseProvider).then((value) {
+                    String databaseFileName =
+                        databaseProvider.accountTableItems[0]['name'];
+                    await saveDatabase(databaseFileName).then((value) {
                       Alert(message: 'Account saved').show();
                     });
                     await deleteDatabaseAndLogout(context, databaseProvider);
@@ -176,19 +181,6 @@ class _ProfileState extends State<Profile> {
       secondaryActionTitle: secondaryActionTitle,
     );
     showDialog(context: context, builder: (context) => alert);
-  }
-
-  saveDatabase(databaseProvider) async {
-    try {
-      var newPath = await getAppDirectory() +
-          "/${databaseProvider.accountTableItems[0]['name']}.db";
-      Directory documentsDirectory = await getApplicationDocumentsDirectory();
-      String path = join(documentsDirectory.path, "database.db");
-      File databaseFile = File(path);
-      await databaseFile.copy(newPath);
-    } catch (e) {
-      print(e.toString());
-    }
   }
 
   Widget infoTile(
@@ -265,10 +257,14 @@ class _ProfileState extends State<Profile> {
           ),
         ),
         Expanded(child: SizedBox()),
-        Icon(
-          Icons.edit,
-          color: Color(0xFF6A6A6A),
-        ),
+        // Icon(
+        //   Icons.delete,
+        //   color: Color(0xFF6A6A6A),
+        // ),
+        // Text(
+        //   'Remove',
+        //   style: TextStyle(color: Colors.red),
+        // )
       ],
     );
   }

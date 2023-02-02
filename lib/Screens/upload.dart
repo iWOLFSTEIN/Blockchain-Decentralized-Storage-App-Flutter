@@ -3,6 +3,7 @@ import 'dart:ffi';
 import 'dart:io';
 import 'package:blockchain_decentralized_storage_system/utils/bytes_calculator.dart';
 import 'package:blockchain_decentralized_storage_system/utils/constants.dart';
+import 'package:blockchain_decentralized_storage_system/utils/database_file_operations.dart';
 import 'package:blockchain_decentralized_storage_system/utils/update_account_balance.dart';
 import 'package:crypto/crypto.dart';
 import 'package:encrypt/encrypt.dart' as en;
@@ -29,6 +30,7 @@ import 'package:path/path.dart';
 import 'package:web_socket_channel/io.dart';
 import '../services/smart_contract_helper_methods.dart';
 import '../utils/compute_merkle_tree.dart';
+import '../utils/file_hash.dart';
 import '../widgets/app_branding.dart';
 
 import 'package:web3dart/src/utils/length_tracking_byte_sink.dart';
@@ -60,6 +62,7 @@ class _UploadState extends State<Upload> {
   final dateRegEx = RegExp(
       r'^(0[1-9]|[12][0-9]|3[01])[\/](0[1-9]|1[012])[\/]((?:19|20)\d\d)$');
   String fileMerkleRoot = '';
+  String fileSha256Hash = '';
   InitTransactionResponse? serverResponse;
   bool isEncryptingFile = false;
   bool isUploading = false;
@@ -260,8 +263,10 @@ class _UploadState extends State<Upload> {
                         databaseProvider: databaseProvider,
                         nodePingData: serverNode,
                         downloadUrl: uploadResponse['download_url'])
-                    .then((value) {
+                    .then((value) async {
                   exitToHomeScreenWithAnAlert();
+                  await saveDatabase(
+                      databaseProvider.accountTableItems[0]['name']);
                   updateAccountBalance(this.context, ethClient);
                 }).onError((error, stackTrace) {
                   handleError(this.context, error);
@@ -747,9 +752,15 @@ class _UploadState extends State<Upload> {
     }
     List<Uint8List> merkleTree = fileMerkleTree(fileBytes);
     String merkleRoot = HEX.encode(merkleTree[merkleTree.length - 1]);
+    String sha256Hash = calculateFileSha256Hash(fileBytes);
     setState(() {
       fileMerkleRoot = merkleRoot;
+      fileSha256Hash = sha256Hash;
     });
+    // print('File(encrypted) Sha256 hash: $fileSha256Hash');
+    // print(
+    //     'Private Key: ${databaseProvider.accountTableItems[0]['private_key']}');
+
     return fileMerkleRoot;
   }
 
@@ -874,7 +885,7 @@ class _UploadState extends State<Upload> {
       'last_verified': secondsSinceEpoch,
       'conclude_timeout': 216000,
       'prove_timeout': 216000,
-      'sha256': '',
+      'sha256': fileSha256Hash,
       'is_encrypted': isEncrypted,
       'download_url': downloadUrl,
     };

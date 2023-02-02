@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import '../widgets/custom_alert_dialogues.dart';
 
-showErrorAlert(context) {
+showErrorAlert(
+  context, {
+  title: 'Error Occured!',
+  subtitle: 'There is an error, please try again later.',
+}) {
   var alert = CustomGeneralAlertDialogue(
-    title: 'Error Occured!',
-    subtitle: 'There is an error, please try again later.',
+    title: title,
+    subtitle: subtitle,
     action: () {
       Navigator.pop(context);
     },
@@ -13,10 +17,14 @@ showErrorAlert(context) {
   showDialog(context: context, builder: (context) => alert);
 }
 
-showInfoAlert(context) {
+showInfoAlert(
+  context, {
+  title: 'Info Alert!',
+  subtitle: 'Privacy policy for Hyperspace is currently under development.',
+}) {
   var alert = CustomGeneralAlertDialogue(
-    title: 'Info Alert!',
-    subtitle: 'Privacy policy for Hyperspace is currently under development.',
+    title: title,
+    subtitle: subtitle,
     action: () {
       Navigator.pop(context);
     },

@@ -26,23 +26,17 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        // ChangeNotifierProvider(create: (context) => DataProvider()),
-
         ChangeNotifierProvider(create: (context) => DatabaseHelper()),
         ChangeNotifierProvider(create: (context) => NetworkData()),
-
         ChangeNotifierProxyProvider<NetworkData, DataProvider>(
             create: (context) => DataProvider(
-                  NetworkData(), 0.0,
-                  //  '', ''
+                  NetworkData(),
+                  0.0,
                 ),
             update: (context, networkData, dataProvider) => DataProvider(
                   networkData,
                   dataProvider!.balance,
-                  // dataProvider.accountAddress,
-                  // dataProvider.publicKey
                 )),
-
         ChangeNotifierProxyProvider<DatabaseHelper, DatabaseProvider>(
             create: (context) =>
                 DatabaseProvider([], [], DatabaseHelper.instance),

@@ -35,7 +35,7 @@ class DatabaseHelper with ChangeNotifier {
 
   Future _onCreate(Database db, int version) async {
     await db.execute('''
-          CREATE TABLE account (
+          CREATE TABLE IF NOT EXISTS account (
        name VARCHAR(256),
       private_key VARCHAR(256),
       public_key VARCHAR(256),
@@ -45,7 +45,7 @@ class DatabaseHelper with ChangeNotifier {
           ''');
 
     await db.execute('''
-       CREATE TABLE files (
+       CREATE TABLE IF NOT EXISTS files (
       file_key VARCHAR(256) PRIMARY KEY UNIQUE,
       bid varchar(256),
 

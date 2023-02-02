@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:math';
 import 'package:blockchain_decentralized_storage_system/provider/database_provider.dart';
 import 'package:blockchain_decentralized_storage_system/screens/home.dart';
+import 'package:blockchain_decentralized_storage_system/utils/database_file_operations.dart';
 import 'package:blockchain_decentralized_storage_system/widgets/custom_alert_dialogues.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -168,6 +169,7 @@ class _IntroState extends State<Intro> {
                 'created_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
               };
               databaseProvider.addAccountTableRow(row);
+              await saveDatabase(nameController.text);
               Navigator.pushAndRemoveUntil(
                   context,
                   MaterialPageRoute(builder: (context) => Home()),
