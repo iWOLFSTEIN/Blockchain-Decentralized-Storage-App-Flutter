@@ -346,7 +346,7 @@ class CustomInfoListDialogue extends StatelessWidget {
             children: [
               accountTitleSubtitle(),
               SizedBox(
-                height: 22.5,
+                height: 15,
               ),
               Expanded(
                 child: SingleChildScrollView(

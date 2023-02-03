@@ -293,8 +293,8 @@ class _HomeState extends State<Home> {
               width: 65,
               decoration: BoxDecoration(
                 color: Color(0xFFFAFAFA),
-                border: Border.all(
-                    width: 1.5, color: Colors.black.withOpacity(0.05)),
+                border:
+                    Border.all(width: 1, color: Colors.black.withOpacity(0.05)),
                 borderRadius: BorderRadius.circular(100),
               ),
               child: Center(child: icon),
@@ -543,6 +543,7 @@ class _UploadedFileTileState extends State<UploadedFileTile> {
         isVerifingSha256Comparison = false;
         isDecrypting = false;
       });
+      Alert(message: 'An error occurred').show();
       print(e.toString());
     }
   }
